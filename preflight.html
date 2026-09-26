@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>Pre-Flight</title>
+<style>
+:root{
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --blue:#007AFF; --green:#34C759; --orange:#FF9500; --purple:#AF52DE; --gray:#8E8E93;
+  --bg:#F2F2F7; --card:#FFFFFF; --sep:rgba(60,60,67,0.12);
+  --label:#000; --label-2:rgba(60,60,67,0.6); --label-3:rgba(60,60,67,0.3);
+  --fill-2:rgba(120,120,128,0.16); --fill-3:rgba(118,118,128,0.12);
+  --ease: cubic-bezier(0.25,0.1,0.25,1);
+  --out: cubic-bezier(0.16,1,0.3,1);
+  --spring: cubic-bezier(0.34,1.56,0.64,1);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#000; --card:#1C1C1E; --sep:rgba(84,84,88,0.6);
+    --label:#FFF; --label-2:rgba(235,235,245,0.6); --label-3:rgba(235,235,245,0.3);
+    --fill-2:rgba(120,120,128,0.32); --fill-3:rgba(118,118,128,0.24);
+  }
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font:17px/1.45 var(--font);
+  background:var(--bg); color:var(--label);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh; min-height:100dvh;
+  display:flex; flex-direction:column;
+  overflow-x:hidden;
+}
+
+/* ---------- header ---------- */
+.hdr{
+  padding:max(env(safe-area-inset-top), 20px) 20px 0;
+  max-width:520px; margin:0 auto; width:100%;
+  display:flex; align-items:center; gap:12px;
+  flex-shrink:0;
+}
+.back{
+  width:36px; height:36px; border-radius:50%;
+  background:var(--fill-3); border:0;
+  color:var(--label); font-size:16px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex-shrink:0;
+  transition:transform .15s var(--spring);
+}
+.back:active{transform:scale(0.92);}
+.back:disabled{opacity:0.3; cursor:default;}
+.dots{
+  flex:1; display:flex; gap:6px; justify-content:center;
+}
+.dot{
+  width:8px; height:8px; border-radius:50%;
+  background:var(--fill-2);
+  transition:all .3s var(--ease);
+}
+.dot.active{background:var(--blue); width:24px; border-radius:4px;}
+.dot.done{background:var(--blue);}
+.spacer{width:36px; flex-shrink:0;}
+
+/* ---------- content ---------- */
+.main{
+  flex:1; width:100%; max-width:520px;
+  margin:0 auto; padding:24px 20px 120px;
+  display:flex; flex-direction:column;
+}
+
+.q{
+  animation:qIn .45s var(--out) both;
+  flex:1;
+  display:flex; flex-direction:column;
+}
+@keyframes qIn{
+  from{opacity:0; transform:translateY(12px);}
+  to{opacity:1; transform:translateY(0);}
+}
+.q .num{
+  font:600 11px/1 var(--mono); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--label-3);
+  margin-bottom:12px;
+}
+.q h1{
+  font:700 32px/1.15 var(--font); letter-spacing:-0.03em;
+  margin-bottom:8px;
+}
+.q h1 em{
+  font-style:normal; color:var(--blue);
+}
+.q .lead{
+  font:400 15px/1.5 var(--font); color:var(--label-2);
+  margin-bottom:28px;
+}
+
+/* ---------- chip grid ---------- */
+.chips{
+  display:flex; flex-wrap:wrap; gap:8px;
+}
+.chip{
+  padding:14px 18px;
+  background:var(--card);
+  border:0.5px solid var(--sep);
+  border-radius:14px;
+  font:500 16px/1.2 var(--font); letter-spacing:-0.01em;
+  color:var(--label);
+  cursor:pointer;
+  display:flex; align-items:center; gap:8px;
+  transition:all .15s var(--ease);
+  min-height:52px;
+  box-shadow:0 1px 2px rgba(0,0,0,0.04);
+}
+.chip:active{transform:scale(0.97);}
+.chip.selected{
+  background:var(--blue);
+  border-color:var(--blue);
+  color:white;
+  box-shadow:0 4px 16px rgba(0,122,255,0.3);
+}
+.chip .ic{
+  font-size:18px; line-height:1;
+}
+.chip .sub{
+  font-size:12px; color:var(--label-2); margin-left:2px;
+}
+.chip.selected .sub{color:rgba(255,255,255,0.8);}
+
+/* ---------- text input ---------- */
+.text-input{
+  width:100%;
+  padding:16px 18px;
+  background:var(--card);
+  border:0.5px solid var(--sep);
+  border-radius:14px;
+  font:400 17px/1.3 var(--font);
+  color:var(--label);
+  outline:none;
+  transition:border-color .2s var(--ease);
+  -webkit-appearance:none;
+}
+.text-input:focus{border-color:var(--blue);}
+.text-input::placeholder{color:var(--label-3);}
+
+.suggestions{
+  display:flex; flex-wrap:wrap; gap:6px;
+  margin-top:12px;
+}
+.suggestion{
+  padding:8px 14px; border-radius:999px;
+  background:var(--fill-3); border:0;
+  font:500 13px/1 var(--font);
+  color:var(--label-2);
+  cursor:pointer;
+  transition:all .15s var(--ease);
+}
+.suggestion:active{background:var(--fill-2);}
+
+/* ---------- footer ---------- */
+.foot{
+  position:fixed; left:0; right:0; bottom:0;
+  padding:16px 20px max(env(safe-area-inset-bottom), 20px);
+  background:linear-gradient(to top, var(--bg) 60%, transparent);
+  max-width:520px; margin:0 auto;
+  z-index:10;
+}
+.next{
+  width:100%; padding:16px;
+  background:var(--blue); color:white;
+  border:0; border-radius:14px;
+  font:600 17px/1 var(--font); letter-spacing:-0.01em;
+  cursor:pointer;
+  min-height:56px;
+  transition:all .2s var(--ease);
+  box-shadow:0 4px 16px rgba(0,122,255,0.25);
+}
+.next:active{transform:scale(0.98); opacity:0.9;}
+.next:disabled{
+  background:var(--fill-2); color:var(--label-3);
+  cursor:not-allowed; box-shadow:none;
+}
+.next.done{
+  background:var(--green);
+  box-shadow:0 4px 16px rgba(52,199,89,0.3);
+}
+
+/* ---------- summary screen ---------- */
+.summary{
+  animation:qIn .5s var(--out) both;
+}
+.summary h1{
+  font:700 34px/1.1 var(--font); letter-spacing:-0.03em;
+  margin-bottom:8px;
+}
+.summary .lead{
+  font:400 15px/1.5 var(--font); color:var(--label-2);
+  margin-bottom:28px;
+}
+.summary-card{
+  background:var(--card); border-radius:18px;
+  border:0.5px solid var(--sep);
+  padding:4px 20px;
+  box-shadow:0 1px 2px rgba(0,0,0,0.04);
+  margin-bottom:16px;
+}
+.summary-row{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 0;
+  border-bottom:0.5px solid var(--sep);
+  gap:16px;
+}
+.summary-row:last-child{border-bottom:0;}
+.summary-row .k{
+  font:600 11px/1 var(--mono); letter-spacing:.14em;
+  text-transform:uppercase; color:var(--label-3);
+  flex-shrink:0;
+}
+.summary-row .v{
+  font:500 16px/1.3 var(--font); color:var(--label);
+  text-align:right;
+  display:flex; align-items:center; gap:8px;
+}
+.summary-row .v .ic{font-size:18px;}
+.summary-row .v .edit{
+  color:var(--blue); font-size:13px; font-weight:500;
+  cursor:pointer;
+  margin-left:4px;
+}
+
+.banner{
+  background:linear-gradient(135deg, rgba(0,122,255,0.1), rgba(175,82,222,0.1));
+  border:0.5px solid rgba(0,122,255,0.3);
+  border-radius:14px;
+  padding:16px 18px;
+  margin-bottom:24px;
+}
+.banner .t{
+  font:600 13px/1.3 var(--font); letter-spacing:-0.01em;
+  margin-bottom:4px;
+  display:flex; align-items:center; gap:6px;
+}
+.banner .d{
+  font:400 13px/1.45 var(--font); color:var(--label-2);
+}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    transition-duration:.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <button class="back" id="backBtn" aria-label="Back">‹</button>
+  <div class="dots" id="dots"></div>
+  <div class="spacer"></div>
+</header>
+
+<main class="main" id="main"></main>
+
+<footer class="foot">
+  <button class="next" id="nextBtn" disabled>Continue</button>
+</footer>
+
+<script>
+/* ============================================================
+   PRE-FLIGHT — the constraint protocol
+   Human supplies the lens. AI applies it.
+   ============================================================ */
+
+const STORAGE = 'scan.context.v1';
+
+const STEPS = [
+  {
+    id: 'property',
+    num: '01',
+    title: 'Which property?',
+    lead: 'A short name you\'ll recognize later.',
+    type: 'text',
+    placeholder: 'e.g. Rochester — Elm St',
+    suggestions: ['Rochester — Elm St', 'Rochester — Main', 'Hayward — 2BR', 'Palo Alto — test']
+  },
+  {
+    id: 'room',
+    num: '02',
+    title: 'Which room?',
+    lead: 'Where are you standing right now?',
+    type: 'chips',
+    options: [
+      { v:'kitchen',  label:'Kitchen',     ic:'🍳' },
+      { v:'bath',     label:'Bathroom',    ic:'🚿' },
+      { v:'bed1',     label:'Bedroom 1',   ic:'🛏️' },
+      { v:'bed2',     label:'Bedroom 2',   ic:'🛏️' },
+      { v:'common',   label:'Common area', ic:'🛋️' },
+      { v:'entry',    label:'Entryway',    ic:'🚪' },
+      { v:'outside',  label:'Outside',     ic:'🌿' },
+      { v:'whole',    label:'Whole unit',  ic:'🏠' }
+    ]
+  },
+  {
+    id: 'phase',
+    num: '03',
+    title: 'What phase?',
+    lead: 'This tells the AI what lens to apply.',
+    type: 'chips',
+    options: [
+      { v:'initial',   label:'Initial scan',      sub:'first look',      ic:'🔍' },
+      { v:'mid',       label:'Mid-renovation',    sub:'work in progress',ic:'🔨' },
+      { v:'final',     label:'Final walkthrough', sub:'pre-signing',     ic:'✓' },
+      { v:'listing',   label:'Listing prep',      sub:'get it ready',    ic:'📸' }
+    ]
+  },
+  {
+    id: 'role',
+    num: '04',
+    title: 'Your role?',
+    lead: 'Who is holding the camera?',
+    type: 'chips',
+    options: [
+      { v:'fde',     label:'FDE',     sub:'operator',  ic:'◆' },
+      { v:'agent',   label:"Agent",   sub:'buyer side',ic:'◇' },
+      { v:'client',  label:'Client',  sub:'buyer',     ic:'◈' },
+      { v:'owner',   label:'Owner',   sub:'landlord',  ic:'⬢' }
+    ]
+  },
+  {
+    id: 'focus',
+    num: '05',
+    title: 'What matters today?',
+    lead: 'What should the AI pay attention to?',
+    type: 'chips',
+    options: [
+      { v:'safety',    label:'Safety',    sub:'code, hazards',   ic:'⚠' },
+      { v:'condition', label:'Condition', sub:'wear, damage',    ic:'◐' },
+      { v:'value',     label:'Value',     sub:'comps, upgrades', ic:'$' },
+      { v:'all',       label:'All of it', sub:'no filter',       ic:'◎' }
+    ]
+  }
+];
+
+let step = 0;
+let context = {};
+
+/* ---------- render: dots ---------- */
+function renderDots(){
+  const el = document.getElementById('dots');
+  el.innerHTML = '';
+  for(let i = 0; i < STEPS.length; i++){
+    const d = document.createElement('div');
+    d.className = 'dot';
+    if(i < step) d.classList.add('done');
+    else if(i === step) d.classList.add('active');
+    el.appendChild(d);
+  }
+}
+
+/* ---------- render: step ---------- */
+function renderStep(){
+  const el = document.getElementById('main');
+  const s = STEPS[step];
+
+  if(step >= STEPS.length){
+    renderSummary();
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="q">
+      <div class="num">${s.num} / 0${STEPS.length}</div>
+      <h1>${s.title}</h1>
+      <div class="lead">${s.lead}</div>
+      <div id="qBody"></div>
+    </div>
+  `;
+
+  const body = document.getElementById('qBody');
+
+  if(s.type === 'text'){
+    body.innerHTML = `
+      <input class="text-input" id="textInput"
+             placeholder="${s.placeholder}"
+             value="${context[s.id] || ''}"
+             autocomplete="off" autocorrect="off" autocapitalize="words">
+      <div class="suggestions">
+        ${s.suggestions.map(x =>
+          `<button class="suggestion" data-v="${x}">${x}</button>`
+        ).join('')}
+      </div>
+    `;
+    const inp = document.getElementById('textInput');
+    inp.addEventListener('input', () => {
+      context[s.id] = inp.value.trim();
+      document.getElementById('nextBtn').disabled = !inp.value.trim();
+    });
+    document.querySelectorAll('.suggestion').forEach(b => {
+      b.addEventListener('click', () => {
+        inp.value = b.dataset.v;
+        context[s.id] = b.dataset.v;
+        document.getElementById('nextBtn').disabled = false;
+        inp.focus();
+      });
+    });
+    if(context[s.id]){
+      document.getElementById('nextBtn').disabled = false;
+    }
+  }
+  else if(s.type === 'chips'){
+    const wrap = document.createElement('div');
+    wrap.className = 'chips';
+    s.options.forEach(o => {
+      const c = document.createElement('button');
+      c.className = 'chip' + (context[s.id] === o.v ? ' selected' : '');
+      c.innerHTML = `
+        <span class="ic">${o.ic || ''}</span>
+        <span>${o.label}${o.sub ? `<span class="sub">· ${o.sub}</span>` : ''}</span>
+      `;
+      c.addEventListener('click', () => {
+        context[s.id] = o.v;
+        /* advance after a beat */
+        document.querySelectorAll('.chip').forEach(x => x.classList.remove('selected'));
+        c.classList.add('selected');
+        document.getElementById('nextBtn').disabled = false;
+        setTimeout(() => {
+          if(step < STEPS.length - 1 || true) next();
+        }, 180);
+      });
+      wrap.appendChild(c);
+    });
+    body.appendChild(wrap);
+    document.getElementById('nextBtn').disabled = !context[s.id];
+  }
+
+  /* back button */
+  document.getElementById('backBtn').disabled = step === 0;
+}
+
+/* ---------- render: summary ---------- */
+function renderSummary(){
+  const el = document.getElementById('main');
+  const ctx = context;
+
+  const roomLabel = (STEPS[1].options.find(o => o.v === ctx.room) || {}).label || '—';
+  const roomIcon  = (STEPS[1].options.find(o => o.v === ctx.room) || {}).ic    || '';
+  const phaseLabel= (STEPS[2].options.find(o => o.v === ctx.phase) || {}).label|| '—';
+  const roleLabel = (STEPS[3].options.find(o => o.v === ctx.role) || {}).label || '—';
+  const focusLabel= (STEPS[4].options.find(o => o.v === ctx.focus) || {}).label|| '—';
+
+  el.innerHTML = `
+    <div class="summary">
+      <h1>Pre-flight complete.</h1>
+      <div class="lead">The scanner now knows the lens. AI observations will be filtered through it.</div>
+
+      <div class="banner">
+        <div class="t">◈ Context locked</div>
+        <div class="d">Say "flag water" — the AI will log it as a <b>${phaseLabel.toLowerCase()}</b> concern in the <b>${roomLabel.toLowerCase()}</b>.</div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-row">
+          <span class="k">Property</span>
+          <span class="v">${ctx.property || '—'} <span class="edit" data-id="property">edit</span></span>
+        </div>
+        <div class="summary-row">
+          <span class="k">Room</span>
+          <span class="v"><span class="ic">${roomIcon}</span> ${roomLabel} <span class="edit" data-id="room">edit</span></span>
+        </div>
+        <div class="summary-row">
+          <span class="k">Phase</span>
+          <span class="v">${phaseLabel} <span class="edit" data-id="phase">edit</span></span>
+        </div>
+        <div class="summary-row">
+          <span class="k">Role</span>
+          <span class="v">${roleLabel} <span class="edit" data-id="role">edit</span></span>
+        </div>
+        <div class="summary-row">
+          <span class="k">Focus</span>
+          <span class="v">${focusLabel} <span class="edit" data-id="focus">edit</span></span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.querySelectorAll('.edit').forEach(e => {
+    e.addEventListener('click', () => {
+      const i = STEPS.findIndex(s => s.id === e.dataset.id);
+      if(i >= 0){ step = i; renderAll(); }
+    });
+  });
+
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.textContent = 'Open Scanner →';
+  nextBtn.classList.add('done');
+  nextBtn.disabled = false;
+  nextBtn.onclick = () => {
+    try{ localStorage.setItem(STORAGE, JSON.stringify(context)); }catch(e){}
+    window.location.href = './scanner.html';
+  };
+}
+
+/* ---------- render: all ---------- */
+function renderAll(){
+  renderDots();
+  renderStep();
+  const nb = document.getElementById('nextBtn');
+  if(step < STEPS.length){
+    nb.textContent = 'Continue';
+    nb.classList.remove('done');
+    nb.onclick = next;
+  }
+}
+
+/* ---------- nav ---------- */
+function next(){
+  if(step >= STEPS.length){ return; }
+  const s = STEPS[step];
+  /* require an answer */
+  if(!context[s.id]){
+    if(s.type === 'text'){
+      const inp = document.getElementById('textInput');
+      if(inp && inp.value.trim()) context[s.id] = inp.value.trim();
+    }
+    if(!context[s.id]) return;
+  }
+  step++;
+  renderAll();
+}
+
+function back(){
+  if(step <= 0) return;
+  step--;
+  renderAll();
+}
+
+/* ---------- wire ---------- */
+document.getElementById('backBtn').addEventListener('click', back);
+document.getElementById('nextBtn').addEventListener('click', next);
+
+/* restore previous context if any */
+try{
+  const saved = localStorage.getItem(STORAGE);
+  if(saved) context = JSON.parse(saved);
+}catch(e){}
+
+renderAll();
+</script>
+</body>
+</html>
