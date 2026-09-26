@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>Ritual · Scan</title>
+<style>
+:root{
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+          "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --blue:#0A84FF;
+  --green:#30D158;
+  --orange:#FF9F0A;
+  --red:#FF453A;
+  --purple:#BF5AF2;
+  --white:#FFFFFF;
+  --dim:rgba(255,255,255,0.72);
+  --dim-2:rgba(255,255,255,0.4);
+  --dim-3:rgba(255,255,255,0.16);
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none;}
+html,body{height:100%; overflow:hidden; background:#000;}
+
+body{
+  font: 17px/1.4 var(--font);
+  color:var(--white);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh; min-height:100dvh;
+}
+
+/* ---------- camera layer ---------- */
+#cam{
+  position:fixed; inset:0;
+  width:100%; height:100%;
+  object-fit:cover;
+  background:#000;
+  z-index:1;
+}
+
+/* ---------- vignette (helps contrast, not dim) ---------- */
+.vignette{
+  position:fixed; inset:0; z-index:2;
+  pointer-events:none;
+  background:
+    radial-gradient(120% 80% at 50% 50%, transparent 40%, rgba(0,0,0,0.35) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 18%, transparent 70%, rgba(0,0,0,0.72) 100%);
+}
+
+/* ---------- scanning frame ---------- */
+.frame{
+  position:fixed; z-index:3;
+  top:50%; left:50%;
+  transform:translate(-50%, -50%);
+  width:min(72vw, 340px);
+  aspect-ratio: 4 / 5;
+  pointer-events:none;
+}
+.corner{
+  position:absolute; width:36px; height:36px;
+  border:3px solid var(--white);
+  opacity:0.95;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.5));
+  transition:border-color .3s ease;
+}
+.corner.tl{top:0; left:0; border-right:0; border-bottom:0; border-top-left-radius:14px;}
+.corner.tr{top:0; right:0; border-left:0; border-bottom:0; border-top-right-radius:14px;}
+.corner.bl{bottom:0; left:0; border-right:0; border-top:0; border-bottom-left-radius:14px;}
+.corner.br{bottom:0; right:0; border-left:0; border-top:0; border-bottom-right-radius:14px;}
+.frame.listening .corner{border-color:var(--blue);}
+.frame.concern .corner{border-color:var(--orange);}
+.frame.pass .corner{border-color:var(--green);}
+
+.scan-line{
+  position:absolute; left:0; right:0;
+  height:2px; top:0;
+  background:linear-gradient(90deg, transparent, var(--blue), transparent);
+  box-shadow:0 0 20px var(--blue);
+  opacity:0;
+  transition:opacity .3s ease;
+}
+.frame.listening .scan-line{
+  opacity:1;
+  animation:scanline 2.2s ease-in-out infinite;
+}
+@keyframes scanline{
+  0%{top:0;}
+  50%{top:calc(100% - 2px);}
+  100%{top:0;}
+}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:fixed; top:0; left:0; right:0; z-index:10;
+  padding:max(env(safe-area-inset-top), 12px) 16px 12px;
+  display:flex; align-items:center; gap:12px;
+  background:linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+}
+.close-btn{
+  width:44px; height:44px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.14);
+  border:1px solid rgba(255,255,255,0.22);
+  -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+  color:var(--white);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; font-weight:600;
+  cursor:pointer; flex-shrink:0;
+  transition:transform .15s ease, background .15s ease;
+}
+.close-btn:active{transform:scale(0.92); background:rgba(255,255,255,0.22);}
+.title-block{flex:1; min-width:0;}
+.title-block h1{
+  font:600 17px/1.15 var(--font); letter-spacing:-0.02em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.title-block .sub{
+  font:400 12px/1.3 var(--font); color:var(--dim-2); margin-top:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.sig-badge{
+  padding:6px 12px; border-radius:999px;
+  font:600 11px/1 var(--mono); letter-spacing:.08em;
+  text-transform:uppercase;
+  background:rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.18);
+  -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+  color:var(--white);
+  flex-shrink:0;
+}
+.sig-badge.open{background:rgba(10,132,255,0.22); border-color:rgba(10,132,255,0.5); color:#A8CEFF;}
+.sig-badge.concern{background:rgba(255,159,10,0.22); border-color:rgba(255,159,10,0.5); color:#FFCB7A;}
+.sig-badge.pass{background:rgba(48,209,88,0.22); border-color:rgba(48,209,88,0.5); color:#8AEEA9;}
+
+/* ---------- transcript ---------- */
+.transcript{
+  position:fixed; z-index:8;
+  left:20px; right:20px;
+  bottom:calc(env(safe-area-inset-bottom, 0px) + 180px);
+  text-align:center;
+  pointer-events:none;
+}
+.transcript .you-said{
+  font:600 11px/1 var(--mono); letter-spacing:.22em;
+  text-transform:uppercase; color:var(--dim-2);
+  margin-bottom:10px;
+  transition:opacity .2s ease;
+  opacity:0;
+}
+.transcript .you-said.show{opacity:1;}
+.transcript .words{
+  font:600 24px/1.3 var(--font); letter-spacing:-0.02em;
+  color:var(--white);
+  text-shadow:0 2px 20px rgba(0,0,0,0.7), 0 0 40px rgba(0,0,0,0.5);
+  min-height:34px;
+  transition:opacity .2s ease;
+  opacity:0;
+}
+.transcript .words.show{opacity:1;}
+.transcript .words .hl{
+  color:var(--blue);
+  transition:color .2s ease;
+}
+.transcript .words.flag .hl{color:var(--orange);}
+.transcript .words.done .hl{color:var(--green);}
+
+/* ---------- status pill ---------- */
+.status-pill{
+  position:fixed; z-index:8;
+  left:50%; transform:translateX(-50%);
+  bottom:calc(env(safe-area-inset-bottom, 0px) + 130px);
+  padding:8px 18px; border-radius:999px;
+  background:rgba(0,0,0,0.55);
+  border:1px solid rgba(255,255,255,0.14);
+  -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+  font:500 13px/1 var(--font);
+  color:var(--dim);
+  display:flex; align-items:center; gap:8px;
+  white-space:nowrap;
+  transition:all .25s ease;
+  opacity:0; pointer-events:none;
+}
+.status-pill.show{opacity:1;}
+.status-pill .dot{
+  width:8px; height:8px; border-radius:50%;
+  background:var(--dim-2);
+  flex-shrink:0;
+}
+.status-pill.listening .dot{
+  background:var(--blue);
+  animation:pulse 1.4s ease-in-out infinite;
+}
+.status-pill.flag .dot{background:var(--orange);}
+.status-pill.done .dot{background:var(--green);}
+.status-pill.speak .dot{background:var(--purple);}
+@keyframes pulse{
+  0%,100%{opacity:1; transform:scale(1);}
+  50%{opacity:0.5; transform:scale(1.4);}
+}
+
+/* ---------- mic / action row ---------- */
+.action-row{
+  position:fixed; z-index:9;
+  left:0; right:0;
+  bottom:0;
+  padding:0 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  display:flex; align-items:center; justify-content:center; gap:16px;
+  background:linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+  padding-top:40px;
+}
+.mic-btn{
+  width:76px; height:76px;
+  border-radius:50%;
+  background:linear-gradient(160deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
+  border:1.5px solid rgba(255,255,255,0.35);
+  -webkit-backdrop-filter:blur(30px); backdrop-filter:blur(30px);
+  color:var(--white);
+  display:flex; align-items:center; justify-content:center;
+  font-size:30px;
+  cursor:pointer;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition:transform .15s ease, box-shadow .3s ease, background .3s ease;
+  position:relative;
+  flex-shrink:0;
+}
+.mic-btn:active{transform:scale(0.93);}
+.mic-btn.listening{
+  background:linear-gradient(160deg, rgba(10,132,255,0.5), rgba(10,132,255,0.25));
+  border-color:var(--blue);
+  box-shadow:0 0 40px rgba(10,132,255,0.6), 0 8px 32px rgba(0,0,0,0.4);
+}
+.mic-btn.listening::after{
+  content:''; position:absolute; inset:-8px;
+  border-radius:50%;
+  border:2px solid var(--blue);
+  animation:ring 1.6s ease-out infinite;
+}
+@keyframes ring{
+  0%{transform:scale(1); opacity:0.8;}
+  100%{transform:scale(1.35); opacity:0;}
+}
+
+/* ---------- command bar ---------- */
+.cmd-bar{
+  display:flex; gap:6px;
+  padding:10px 14px;
+  background:rgba(0,0,0,0.5);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:999px;
+  -webkit-backdrop-filter:blur(24px); backdrop-filter:blur(24px);
+  overflow-x:auto;
+  scrollbar-width:none;
+  max-width:calc(100vw - 130px);
+}
+.cmd-bar::-webkit-scrollbar{display:none;}
+.cmd{
+  padding:7px 12px; border-radius:999px;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.1);
+  font:500 12px/1 var(--font);
+  color:var(--dim);
+  white-space:nowrap;
+  flex-shrink:0;
+  cursor:pointer;
+  transition:all .15s ease;
+}
+.cmd:active{
+  background:rgba(10,132,255,0.25);
+  border-color:rgba(10,132,255,0.5);
+  color:var(--white);
+}
+.cmd b{color:var(--white); font-weight:600;}
+
+/* ---------- hint sheet ---------- */
+.sheet-bg{
+  position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,0.55);
+  -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+  opacity:0; pointer-events:none;
+  transition:opacity .3s ease;
+}
+.sheet-bg.open{opacity:1; pointer-events:auto;}
+.sheet{
+  position:fixed; left:0; right:0; bottom:0; z-index:201;
+  background:#1C1C1E;
+  color:var(--white);
+  border-radius:20px 20px 0 0;
+  padding:20px 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  transform:translateY(100%);
+  transition:transform .45s cubic-bezier(0.16,1,0.3,1);
+  max-height:80vh; overflow-y:auto;
+}
+.sheet.open{transform:translateY(0);}
+.sheet-grip{
+  width:36px; height:5px; background:rgba(255,255,255,0.25);
+  border-radius:3px; margin:0 auto 16px;
+}
+.sheet h2{
+  font:600 20px/1.2 var(--font); letter-spacing:-0.02em;
+  margin-bottom:6px;
+}
+.sheet .lead{
+  font:400 14px/1.5 var(--font); color:var(--dim-2);
+  margin-bottom:20px;
+}
+.sheet .group{
+  margin-bottom:22px;
+}
+.sheet .group h3{
+  font:600 11px/1 var(--mono); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--dim-2);
+  margin-bottom:10px;
+}
+.cmd-line{
+  display:flex; align-items:center; gap:12px;
+  padding:12px 14px;
+  background:rgba(255,255,255,0.05);
+  border-radius:12px;
+  margin-bottom:8px;
+  cursor:pointer;
+  transition:background .15s ease;
+  border:1px solid rgba(255,255,255,0.05);
+}
+.cmd-line:active{background:rgba(255,255,255,0.1);}
+.cmd-line .q{
+  font:400 15px/1.3 var(--font);
+  flex:1;
+}
+.cmd-line .a{
+  font:500 12px/1 var(--mono);
+  color:var(--blue);
+  letter-spacing:.04em;
+  flex-shrink:0;
+}
+.cmd-line.flag .a{color:var(--orange);}
+.cmd-line.done .a{color:var(--green);}
+
+/* ---------- result banner ---------- */
+.result{
+  position:fixed; z-index:8;
+  left:50%; transform:translateX(-50%) translateY(-20px);
+  top:calc(env(safe-area-inset-top, 0px) + 80px);
+  padding:12px 20px;
+  border-radius:14px;
+  background:rgba(0,0,0,0.72);
+  border:1px solid rgba(255,255,255,0.16);
+  -webkit-backdrop-filter:blur(30px); backdrop-filter:blur(30px);
+  font:600 15px/1.3 var(--font); letter-spacing:-0.01em;
+  white-space:nowrap;
+  opacity:0; pointer-events:none;
+  transition:opacity .3s ease, transform .3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 12px 40px rgba(0,0,0,0.5);
+}
+.result.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+.result.flag{border-color:rgba(255,159,10,0.6); box-shadow:0 0 30px rgba(255,159,10,0.3), 0 12px 40px rgba(0,0,0,0.5);}
+.result.done{border-color:rgba(48,209,88,0.6); box-shadow:0 0 30px rgba(48,209,88,0.3), 0 12px 40px rgba(0,0,0,0.5);}
+.result.pass{border-color:rgba(48,209,88,0.6); box-shadow:0 0 30px rgba(48,209,88,0.3), 0 12px 40px rgba(0,0,0,0.5);}
+
+/* ---------- error / permission ---------- */
+.permission{
+  position:fixed; inset:0; z-index:300;
+  background:#000; color:var(--white);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center; padding:40px;
+  gap:20px;
+}
+.permission .icon{font-size:56px; opacity:0.5;}
+.permission h2{font:600 22px/1.2 var(--font); letter-spacing:-0.02em;}
+.permission p{font:400 15px/1.5 var(--font); color:var(--dim-2); max-width:340px;}
+.permission button{
+  margin-top:8px; padding:14px 32px;
+  background:var(--blue); color:white; border:0; border-radius:999px;
+  font:600 16px/1 var(--font); cursor:pointer;
+  min-height:52px;
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    transition-duration:.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<video id="cam" autoplay playsinline muted></video>
+<div class="vignette"></div>
+
+<!-- scan frame -->
+<div class="frame" id="frame">
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+  <div class="scan-line"></div>
+</div>
+
+<!-- top bar -->
+<div class="topbar">
+  <button class="close-btn" id="closeBtn" aria-label="Close">✕</button>
+  <div class="title-block">
+    <h1 id="title">The Final Walkthrough</h1>
+    <div class="sub" id="sub">Say "flag water" · "done lights" · "status"</div>
+  </div>
+  <div class="sig-badge open" id="sigBadge">0%</div>
+</div>
+
+<!-- result banner -->
+<div class="result" id="result"></div>
+
+<!-- transcript -->
+<div class="transcript">
+  <div class="you-said" id="youSaid">You said</div>
+  <div class="words" id="words"></div>
+</div>
+
+<!-- status pill -->
+<div class="status-pill" id="statusPill">
+  <span class="dot"></span>
+  <span id="statusText">Tap the mic and speak</span>
+</div>
+
+<!-- action row -->
+<div class="action-row">
+  <div class="cmd-bar" id="cmdBar">
+    <div class="cmd" data-cmd="flag the water"><b>Flag</b> water</div>
+    <div class="cmd" data-cmd="done lights"><b>Done</b> lights</div>
+    <div class="cmd" data-cmd="status"><b>Status</b></div>
+    <div class="cmd" data-cmd="flag the roof"><b>Flag</b> roof</div>
+    <div class="cmd" data-cmd="done walls"><b>Done</b> walls</div>
+    <div class="cmd" data-help="1"><b>?</b> All commands</div>
+  </div>
+  <button class="mic-btn" id="micBtn" aria-label="Speak">🎙</button>
+</div>
+
+<!-- hint sheet -->
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-grip"></div>
+  <h2>What to say</h2>
+  <p class="lead">Tap the mic, then speak. Or tap a command below to try it.</p>
+
+  <div class="group">
+    <h3>Flag a problem</h3>
+    <div class="cmd-line flag" data-cmd="flag lights"><span class="q">"Flag lights"</span><span class="a">→ concern</span></div>
+    <div class="cmd-line flag" data-cmd="flag water"><span class="q">"Flag water"</span><span class="a">→ concern</span></div>
+    <div class="cmd-line flag" data-cmd="flag appliances"><span class="q">"Flag appliances"</span><span class="a">→ concern</span></div>
+    <div class="cmd-line flag" data-cmd="flag doors"><span class="q">"Flag doors"</span><span class="a">→ concern</span></div>
+    <div class="cmd-line flag" data-cmd="flag heating"><span class="q">"Flag heating"</span><span class="a">→ concern</span></div>
+    <div class="cmd-line flag" data-cmd="flag walls"><span class="q">"Flag walls"</span><span class="a">→ concern</span></div>
+  </div>
+
+  <div class="group">
+    <h3>Mark done</h3>
+    <div class="cmd-line done" data-cmd="done lights"><span class="q">"Done lights"</span><span class="a">→ pass step</span></div>
+    <div class="cmd-line done" data-cmd="done water"><span class="q">"Done water"</span><span class="a">→ pass step</span></div>
+    <div class="cmd-line done" data-cmd="done walls"><span class="q">"Done walls"</span><span class="a">→ pass step</span></div>
+  </div>
+
+  <div class="group">
+    <h3>Status & control</h3>
+    <div class="cmd-line" data-cmd="status"><span class="q">"Status"</span><span class="a">→ speak signal</span></div>
+    <div class="cmd-line" data-cmd="repeat"><span class="q">"Repeat"</span><span class="a">→ say again</span></div>
+    <div class="cmd-line" data-cmd="reset"><span class="q">"Reset"</span><span class="a">→ start over</span></div>
+  </div>
+</div>
+
+<!-- permission blocker -->
+<div class="permission" id="perm" style="display:none;">
+  <div class="icon">📷</div>
+  <h2>Camera + Mic needed</h2>
+  <p>This app needs access to the rear camera and microphone. Tap below to allow.</p>
+  <button id="allowBtn">Allow access</button>
+</div>
+
+<script>
+/* ============================================================
+   RITUAL · SCANNER
+   Rear camera · Voice · TTS · Live ritual state
+   ============================================================ */
+
+/* ---------- manifest (matches ritual.html) ---------- */
+const CHECKS = [
+  { id:'c1', label:'lights',    full:'Lights and outlets'   },
+  { id:'c2', label:'water',     full:'Water, toilets, leaks'},
+  { id:'c3', label:'appliances',full:'Appliances work'      },
+  { id:'c4', label:'doors',     full:'Doors and windows'    },
+  { id:'c5', label:'heating',   full:'Heating and cooling'  },
+  { id:'c6', label:'walls',     full:'Walls, floors, ceilings'}
+];
+
+const SYNONYMS = {
+  c1:['light','lights','outlet','switch','lamp'],
+  c2:['water','leak','leaks','toilet','pipe','faucet','drain','sink','bath'],
+  c3:['appliance','appliances','oven','range','fridge','washer','dryer','dishwasher'],
+  c4:['door','doors','window','windows','lock','seal','screen'],
+  c5:['heat','heating','cool','cooling','hvac','air','furnace','ac'],
+  c6:['wall','walls','floor','floors','ceiling','damage','stain','crack']
+};
+
+const STORAGE = 'scanner.state.v1';
+
+/* ---------- runtime ---------- */
+const Runtime = {
+  state:{ checks:{} },
+
+  init(){
+    try{
+      const s = localStorage.getItem(STORAGE);
+      if(s) this.state = JSON.parse(s);
+    }catch(e){}
+    CHECKS.forEach(c => {
+      if(!this.state.checks[c.id]) this.state.checks[c.id] = { s:'todo', flagged:false };
+    });
+  },
+
+  save(){
+    try{ localStorage.setItem(STORAGE, JSON.stringify(this.state)); }catch(e){}
+  },
+
+  progress(){
+    const done = CHECKS.filter(c => this.state.checks[c.id].s === 'done').length;
+    return done / CHECKS.length;
+  },
+
+  signal(){
+    if(CHECKS.some(c => this.state.checks[c.id].flagged)) return 'concern';
+    if(CHECKS.every(c => this.state.checks[c.id].s === 'done')) return 'pass';
+    return 'open';
+  },
+
+  flag(id){
+    const c = this.state.checks[id]; if(!c) return;
+    c.flagged = !c.flagged;
+    this.save();
+    return { check:id, flagged:c.flagged };
+  },
+
+  done(id){
+    const c = this.state.checks[id]; if(!c) return;
+    c.s = c.s === 'done' ? 'todo' : 'done';
+    this.save();
+    return { check:id, done:c.s === 'done' };
+  },
+
+  reset(){
+    CHECKS.forEach(c => this.state.checks[c.id] = { s:'todo', flagged:false });
+    this.save();
+  }
+};
+
+/* ---------- resolve natural language ---------- */
+function matchCheck(text){
+  const t = text.toLowerCase();
+  for(const [id, words] of Object.entries(SYNONYMS)){
+    if(words.some(w => t.includes(w))) return id;
+  }
+  return null;
+}
+
+function parseCommand(text){
+  const t = text.toLowerCase().trim();
+  if(/^status|what'?s the status|where are we|check/.test(t)) return { verb:'status' };
+  if(/^repeat|say again|what/.test(t))                      return { verb:'repeat' };
+  if(/^reset|start over|clear/.test(t))                     return { verb:'reset' };
+  if(/^flag|problem|issue|broken|damaged|leak/.test(t))     return { verb:'flag', id:matchCheck(t) };
+  if(/^done|finished|complete|checked|passed/.test(t))      return { verb:'done', id:matchCheck(t) };
+  /* bare check name → infer from a "flag" or "done" keyword elsewhere */
+  const id = matchCheck(t);
+  if(id && /flag/.test(t)) return { verb:'flag', id };
+  if(id && /done|ok|good/.test(t)) return { verb:'done', id };
+  return { verb:'unknown' };
+}
+
+/* ---------- TTS ---------- */
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
+  u.lang = 'en-US';
+  speechSynthesis.speak(u);
+}
+
+/* ---------- UI refs ---------- */
+const $ = id => document.getElementById(id);
+const cam      = $('cam');
+const frame    = $('frame');
+const sigBadge = $('sigBadge');
+const youSaid  = $('youSaid');
+const words    = $('words');
+const statusPill = $('statusPill');
+const statusText = $('statusText');
+const micBtn   = $('micBtn');
+const resultEl = $('result');
+const sheet    = $('sheet');
+const sheetBg  = $('sheetBg');
+const perm     = $('perm');
+const cmdBar   = $('cmdBar');
+
+/* ---------- state render ---------- */
+function render(){
+  const p = Runtime.progress();
+  const sig = Runtime.signal();
+  sigBadge.className = 'sig-badge ' + sig;
+  sigBadge.textContent = Math.round(p*100) + '%';
+  frame.classList.remove('listening','concern','pass','open');
+  frame.classList.add(sig, 'listening');
+}
+
+/* ---------- status pill ---------- */
+function setStatus(text, kind){
+  statusText.textContent = text;
+  statusPill.classList.add('show');
+  statusPill.classList.remove('listening','flag','done','speak');
+  if(kind) statusPill.classList.add(kind);
+}
+function clearStatus(){
+  statusPill.classList.remove('show');
+}
+
+/* ---------- result banner ---------- */
+function showResult(text, kind){
+  resultEl.className = 'result ' + (kind || '');
+  resultEl.textContent = text;
+  resultEl.classList.add('show');
+  clearTimeout(showResult._t);
+  showResult._t = setTimeout(() => resultEl.classList.remove('show'), 2400);
+}
+
+/* ---------- transcript ---------- */
+function showTranscript(text, kind){
+  if(!text){ youSaid.classList.remove('show'); words.classList.remove('show'); return; }
+  youSaid.classList.add('show');
+  words.classList.add('show');
+  words.className = 'words show' + (kind ? ' ' + kind : '');
+  /* highlight the verb + check */
+  let html = text.replace(/flag/i, '<span class="hl">flag</span>')
+                 .replace(/done/i, '<span class="hl">done</span>')
+                 .replace(/status/i,'<span class="hl">status</span>');
+  words.innerHTML = html;
+  clearTimeout(showTranscript._t);
+  showTranscript._t = setTimeout(() => {
+    youSaid.classList.remove('show');
+    words.classList.remove('show');
+  }, 3500);
+}
+
+/* ---------- execute command ---------- */
+function execute(cmd){
+  if(!cmd) return;
+
+  if(cmd.verb === 'status'){
+    const p = Math.round(Runtime.progress()*100);
+    const sig = Runtime.signal();
+    const line = sig === 'pass' ? 'All checks passed. Ready to sign.'
+               : sig === 'concern' ? 'A problem is flagged. Do not sign yet.'
+               : `In progress. ${p} percent complete.`;
+    speak(line);
+    showResult(`Status · ${p}%`, sig === 'concern' ? 'flag' : sig === 'pass' ? 'pass' : '');
+    setStatus(line, 'speak');
+    setTimeout(clearStatus, 3200);
+    return;
+  }
+
+  if(cmd.verb === 'repeat'){
+    const sig = Runtime.signal();
+    const line = sig === 'concern' ? 'A problem is flagged.'
+               : sig === 'pass' ? 'Ready to sign.'
+               : 'In progress.';
+    speak(line);
+    setStatus(line, 'speak');
+    setTimeout(clearStatus, 2600);
+    return;
+  }
+
+  if(cmd.verb === 'reset'){
+    Runtime.reset(); render();
+    speak('Ritual reset.');
+    showResult('Reset', '');
+    setStatus('All checks cleared', '');
+    setTimeout(clearStatus, 2600);
+    return;
+  }
+
+  if(cmd.verb === 'flag'){
+    if(!cmd.id){ speak('Which check?'); setStatus('Which check?', ''); setTimeout(clearStatus, 2000); return; }
+    const r = Runtime.flag(cmd.id);
+    const chk = CHECKS.find(c => c.id === cmd.id);
+    render();
+    if(r.flagged){
+      speak(`Flagged ${chk.full}. Do not sign yet.`);
+      showResult(`⚑ ${chk.full}`, 'flag');
+      setStatus(`Flagged · ${chk.full}`, 'flag');
+    } else {
+      speak(`${chk.full} cleared.`);
+      showResult(`Cleared · ${chk.full}`, '');
+      setStatus(`Cleared · ${chk.full}`, '');
+    }
+    setTimeout(clearStatus, 2600);
+    return;
+  }
+
+  if(cmd.verb === 'done'){
+    if(!cmd.id){ speak('Which check?'); setStatus('Which check?', ''); setTimeout(clearStatus, 2000); return; }
+    const r = Runtime.done(cmd.id);
+    const chk = CHECKS.find(c => c.id === cmd.id);
+    render();
+    if(r.done){
+      speak(`${chk.full} done.`);
+      showResult(`✓ ${chk.full}`, 'done');
+      setStatus(`Done · ${chk.full}`, 'done');
+    } else {
+      speak(`${chk.full} reopened.`);
+      showResult(`Reopened · ${chk.full}`, '');
+      setStatus(`Reopened · ${chk.full}`, '');
+    }
+    setTimeout(clearStatus, 2400);
+    return;
+  }
+
+  /* unknown */
+  speak("I didn't catch that. Try flag water, done lights, or status.");
+  setStatus("Didn't catch that · try a command", '');
+  setTimeout(clearStatus, 2600);
+}
+
+/* ---------- Speech Recognition ---------- */
+let recognition = null;
+let isListening = false;
+let autoStopTimer = null;
+
+function initRecognition(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) return null;
+  const r = new SR();
+  r.continuous = false;
+  r.interimResults = true;
+  r.lang = 'en-US';
+  r.maxAlternatives = 1;
+  return r;
+}
+
+function startListening(){
+  if(!recognition){ recognition = initRecognition(); }
+  if(!recognition) { setStatus('Voice not supported', ''); setTimeout(clearStatus, 2400); return; }
+  if(isListening) return;
+
+  try{ recognition.start(); }catch(e){}
+
+  isListening = true;
+  micBtn.classList.add('listening');
+  frame.classList.add('listening');
+  setStatus('Listening…', 'listening');
+  showTranscript('', '');
+  youSaid.classList.remove('show');
+
+  /* auto-stop after 6s */
+  clearTimeout(autoStopTimer);
+  autoStopTimer = setTimeout(() => { try{ recognition.stop(); }catch(e){} }, 6000);
+}
+
+function stopListening(){
+  if(!isListening) return;
+  try{ recognition.stop(); }catch(e){}
+  isListening = false;
+  micBtn.classList.remove('listening');
+  clearTimeout(autoStopTimer);
+}
+
+/* ---------- wire recognition events ---------- */
+function wireRecognition(){
+  if(!recognition) return;
+
+  recognition.onresult = (e) => {
+    let interim = '';
+    let final = '';
+    for(let i = e.resultIndex; i < e.results.length; i++){
+      const t = e.results[i][0].transcript;
+      if(e.results[i].isFinal) final += t; else interim += t;
+    }
+    const display = final || interim;
+    if(display){
+      showTranscript(display, '');
+      const parsed = parseCommand(display);
+      setStatus(parsed.verb === 'unknown' ? 'Listening…' : parsed.verb, 'listening');
+    }
+    if(final){
+      const parsed = parseCommand(final);
+      const kind = parsed.verb === 'flag' ? 'flag'
+                 : parsed.verb === 'done' ? 'done'
+                 : '';
+      showTranscript(final, kind);
+      execute(parsed);
+      stopListening();
+    }
+  };
+
+  recognition.onerror = (e) => {
+    isListening = false;
+    micBtn.classList.remove('listening');
+    if(e.error === 'not-allowed' || e.error === 'service-not-allowed'){
+      setStatus('Mic blocked · allow in Settings', '');
+    } else if(e.error === 'no-speech'){
+      setStatus('Didn\'t hear anything', '');
+    } else if(e.error === 'aborted'){
+      /* user-stopped; ignore */
+    } else {
+      setStatus('Error · ' + e.error, '');
+    }
+    setTimeout(clearStatus, 2600);
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    micBtn.classList.remove('listening');
+    frame.classList.remove('listening');
+    render();
+  };
+}
+
+/* ---------- camera ---------- */
+async function startCamera(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },  /* REAR camera — fixes inversion */
+        width:  { ideal: 1920 },
+        height: { ideal: 1080 }
+      },
+      audio: false
+    });
+    cam.srcObject = stream;
+    await cam.play().catch(() => {});
+    cam.style.transform = 'scaleX(1)'; /* no mirror — rear camera is not mirrored */
+    perm.style.display = 'none';
+    return true;
+  }catch(e){
+    console.error('Camera error', e);
+    perm.style.display = 'flex';
+    return false;
+  }
+}
+
+/* ---------- sheet ---------- */
+function openSheet(){
+  sheet.classList.add('open');
+  sheetBg.classList.add('open');
+}
+function closeSheet(){
+  sheet.classList.remove('open');
+  sheetBg.classList.remove('open');
+}
+
+/* ---------- wire UI ---------- */
+micBtn.addEventListener('click', () => {
+  if(isListening) stopListening();
+  else startListening();
+});
+
+$('closeBtn').addEventListener('click', () => {
+  stopListening();
+  if(history.length > 1) history.back();
+  else location.href = './ritual.html';
+});
+
+sheetBg.addEventListener('click', closeSheet);
+
+cmdBar.addEventListener('click', (e) => {
+  const c = e.target.closest('.cmd'); if(!c) return;
+  if(c.dataset.help){ openSheet(); return; }
+  const cmd = c.dataset.cmd;
+  if(!cmd) return;
+  showTranscript(cmd, '');
+  execute(parseCommand(cmd));
+});
+
+sheet.addEventListener('click', (e) => {
+  const line = e.target.closest('.cmd-line'); if(!line) return;
+  const cmd = line.dataset.cmd; if(!cmd) return;
+  closeSheet();
+  showTranscript(cmd, '');
+  execute(parseCommand(cmd));
+});
+
+$('allowBtn').addEventListener('click', () => {
+  startCamera().then(ok => { if(ok) setupAfterPermission(); });
+});
+
+/* ---------- boot ---------- */
+async function boot(){
+  Runtime.init();
+  render();
+  recognition = initRecognition();
+  wireRecognition();
+
+  const ok = await startCamera();
+  if(ok){
+    setStatus('Tap the mic · or tap a command', '');
+    setTimeout(clearStatus, 4000);
+  }
+}
+
+function setupAfterPermission(){
+  setStatus('Ready · tap the mic', '');
+  setTimeout(clearStatus, 3000);
+}
+
+/* ---------- visibility (resume camera when returning) ---------- */
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible'){
+    if(!cam.srcObject) startCamera();
+    render();
+  }
+});
+
+boot();
+</script>
+</body>
+</html>
