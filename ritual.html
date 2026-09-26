@@ -563,6 +563,21 @@ body{
    Nothing in the middle. Prepare, not predict.
    ============================================================ */
 
+/* ---------- natural language → check id ---------- */
+function matchCheck(text){
+  const t = String(text || '').toLowerCase();
+  const map = [
+    [/light|outlet|switch/,                              'c1'],
+    [/water|leak|toilet|pipe|faucet|drain|sink|bath/,    'c2'],
+    [/appliance|oven|range|fridge|washer|dryer|dish/,    'c3'],
+    [/door|window|lock|seal|screen/,                     'c4'],
+    [/heat|cool|hvac|air|furnace/,                       'c5'],
+    [/wall|floor|ceiling|damage|stain|crack/,            'c6']
+  ];
+  for(const [re, id] of map) if(re.test(t)) return id;
+  return 'c1';
+}
+
 /* ---------- 1. MANIFEST (the ritual) ---------- */
 const MANIFEST = {
   id: 'walkthrough.final',
@@ -654,7 +669,7 @@ const Runtime = {
 
   /* --- mutations --- */
   cycle(id){
-    const c = this.state.checks[id]; if(!c) return;
+    const c = this.state.checks[id]; if(!c) return { prev:'todo', now:'todo' };
     const order = ['todo','doing','done'];
     const prev = c.s;
     c.s = order[(order.indexOf(c.s)+1) % 3];
@@ -667,7 +682,7 @@ const Runtime = {
   },
 
   flag(id){
-    const c = this.state.checks[id]; if(!c) return;
+    const c = this.state.checks[id]; if(!c) return false;
     c.flagged = !c.flagged;
     if(c.flagged){
       this.append('flag', `Concern raised · <b>${this.label(id)}</b>`, `gate armed · ${id}`);
@@ -1075,15 +1090,18 @@ document.getElementById('shareBtn').addEventListener('click', async () => {
 document.getElementById('recordBtn').addEventListener('click', () => Skin.openLedger());
 
 /* ---------- 6. SIRI BRIDGE (URL commands) ---------- */
-/* Siri Shortcut: open ritual.html?cmd=status  → speaks signal
-   Siri Shortcut: open ritual.html?cmd=flag&id=c1  → flags check
-   Siri Shortcut: open ritual.html?cmd=done&id=c1  → marks done
-   Siri Shortcut: open ritual.html?cmd=reset  → resets ritual */
+/* Siri Shortcut: open ritual.html?cmd=status             → speaks signal
+   Siri Shortcut: open ritual.html?cmd=flag&check=water   → flags water check
+   Siri Shortcut: open ritual.html?cmd=flag&id=c2         → flags check c2
+   Siri Shortcut: open ritual.html?cmd=done&check=lights  → marks lights done
+   Siri Shortcut: open ritual.html?cmd=done&id=c1         → marks c1 done
+   Siri Shortcut: open ritual.html?cmd=reset              → resets ritual */
 function handleCommand(){
   const params = new URLSearchParams(location.search);
   const cmd = params.get('cmd');
   if(!cmd) return;
   const id = params.get('id');
+  const check = params.get('check') || '';
 
   if(cmd === 'status'){
     const sig = Runtime.signal();
@@ -1096,9 +1114,18 @@ function handleCommand(){
     }
     Skin.toast(text, sig === 'concern' ? 'concern' : sig === 'pass' ? 'pass' : 'info');
   }
-  else if(cmd === 'flag' && id){ Runtime.flag(id); Skin.render(); }
-  else if(cmd === 'done' && id){ Runtime.cycle(id); Runtime.cycle(id); Skin.render(); }
-  else if(cmd === 'reset'){ Runtime.reset(); Skin.render(); }
+  else if(cmd === 'flag'){
+    const resolved = check ? matchCheck(check) : id;
+    if(resolved){ Runtime.flag(resolved); Skin.render(); }
+  }
+  else if(cmd === 'done'){
+    const resolved = check ? matchCheck(check) : id;
+    if(resolved){ Runtime.cycle(resolved); Runtime.cycle(resolved); Skin.render(); }
+  }
+  else if(cmd === 'reset'){
+    Runtime.reset();
+    Skin.render();
+  }
 
   /* clean the URL so it doesn't re-fire on reload */
   history.replaceState({}, '', location.pathname);
