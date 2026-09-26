@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ritual">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>Ritual — The Final Walkthrough</title>
+<style>
+/* ============================================================
+   THE ENGINE — v1.0
+   Manifest · Runtime · Badge API · Record · Signal · Skin
+   One file. Local-first. Siri-ready.
+   ============================================================ */
+
+:root{
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+          "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s7:32px; --s8:40px;
+  --r-card:14px; --r-btn:10px; --r-seg:9px; --r-pill:999px;
+
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --bg:#F2F2F7;
+  --card:#FFFFFF;
+  --card-press:#F2F2F7;
+  --sep:rgba(60,60,67,0.12);
+  --label:#000000;
+  --label-2:rgba(60,60,67,0.6);
+  --label-3:rgba(60,60,67,0.3);
+  --label-4:rgba(60,60,67,0.18);
+  --blue:#007AFF;
+  --green:#34C759;
+  --orange:#FF9500;
+  --red:#FF3B30;
+  --purple:#AF52DE;
+  --gray:#8E8E93;
+  --fill-1:rgba(120,120,128,0.2);
+  --fill-2:rgba(120,120,128,0.16);
+  --fill-3:rgba(118,118,128,0.12);
+  --shadow-1:0 1px 2px rgba(0,0,0,0.04);
+  --shadow-2:0 4px 16px rgba(0,0,0,0.08);
+  --shadow-3:0 12px 32px rgba(0,0,0,0.16);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#000000; --card:#1C1C1E; --card-press:#2C2C2E;
+    --sep:rgba(84,84,88,0.6); --label:#FFFFFF;
+    --label-2:rgba(235,235,245,0.6); --label-3:rgba(235,235,245,0.3);
+    --label-4:rgba(235,235,245,0.18);
+    --blue:#0A84FF; --green:#30D158; --orange:#FF9F0A; --red:#FF453A; --purple:#BF5AF2;
+    --gray:#8E8E93;
+    --fill-1:rgba(120,120,128,0.36);
+    --fill-2:rgba(120,120,128,0.32);
+    --fill-3:rgba(118,118,128,0.24);
+    --shadow-1:0 1px 2px rgba(0,0,0,0.3);
+    --shadow-2:0 4px 16px rgba(0,0,0,0.4);
+    --shadow-3:0 12px 32px rgba(0,0,0,0.6);
+  }
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font:17px/1.47 var(--font);
+  -webkit-font-smoothing:antialiased;
+  background:var(--bg); color:var(--label);
+  min-height:100vh; min-height:100dvh;
+  display:flex; flex-direction:column;
+  overflow-x:hidden;
+}
+
+/* ---------- header ---------- */
+.hdr{
+  position:sticky; top:0; z-index:100;
+  background:color-mix(in srgb, var(--bg) 72%, transparent);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:0.5px solid var(--sep);
+  padding:max(env(safe-area-inset-top), var(--s3)) var(--s4) var(--s3);
+}
+.hdr-row{
+  display:flex; align-items:center; gap:var(--s3);
+  max-width:680px; margin:0 auto;
+}
+.hdr-t{flex:1; min-width:0;}
+.hdr-t h1{
+  font:600 22px/1.15 var(--font); letter-spacing:-0.03em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.hdr-t .sub{
+  font:400 13px/1.3 var(--font); color:var(--label-2); margin-top:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* ---------- signal ring ---------- */
+.ring{
+  position:relative; width:54px; height:54px; flex-shrink:0;
+  cursor:pointer; transition:transform var(--s1) var(--spring);
+  background:transparent; border:0; padding:0;
+}
+.ring:active{transform:scale(0.92);}
+.ring svg{width:100%; height:100%; transform:rotate(-90deg);}
+.ring .bg{fill:none; stroke:var(--fill-3); stroke-width:4;}
+.ring .fill{
+  fill:none; stroke-width:4; stroke-linecap:round;
+  stroke-dasharray:100; stroke-dashoffset:100;
+  transition:stroke-dashoffset .6s var(--out), stroke .3s var(--ease);
+}
+.ring .lbl{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font:700 13px/1 var(--font); letter-spacing:-0.02em;
+}
+.ring.open .fill{stroke:var(--blue);} .ring.open .lbl{color:var(--blue);}
+.ring.concern .fill{stroke:var(--orange);} .ring.concern .lbl{color:var(--orange);}
+.ring.pass .fill{stroke:var(--green);} .ring.pass .lbl{color:var(--green);}
+
+/* ---------- view segmented ---------- */
+.seg{
+  display:flex; background:var(--fill-3);
+  border-radius:var(--r-seg); padding:2px;
+  margin:var(--s3) auto 0; max-width:680px;
+}
+.seg button{
+  flex:1; background:transparent; border:0;
+  font:600 13px/1 var(--font); letter-spacing:-0.01em;
+  color:var(--label); padding:6px 8px;
+  border-radius:7px; cursor:pointer;
+  transition:background .15s var(--ease), box-shadow .15s var(--ease);
+  min-height:32px;
+}
+.seg button.active{
+  background:var(--card);
+  box-shadow:0 3px 8px rgba(0,0,0,0.12), 0 1px 1px rgba(0,0,0,0.04);
+}
+
+/* ---------- content ---------- */
+.main{
+  flex:1; width:100%; max-width:680px;
+  margin:0 auto; padding:var(--s4) var(--s4) 120px;
+}
+
+/* ---------- signal banner ---------- */
+.signal{
+  border-radius:var(--r-card); padding:var(--s4); margin-bottom:var(--s3);
+  text-align:center; transition:all .3s var(--ease);
+  box-shadow:var(--shadow-1);
+  border:0.5px solid var(--sep);
+  background:var(--card);
+  position:relative; overflow:hidden;
+}
+.signal.open{border-color:color-mix(in srgb, var(--blue) 40%, transparent);}
+.signal.concern{border-color:color-mix(in srgb, var(--orange) 40%, transparent);}
+.signal.pass{border-color:color-mix(in srgb, var(--green) 40%, transparent);}
+.signal .glyph{
+  font-family:var(--font); font-size:34px; line-height:1;
+  margin-bottom:var(--s2); display:block;
+}
+.signal.open .glyph{color:var(--blue);}
+.signal.concern .glyph{color:var(--orange);}
+.signal.pass .glyph{color:var(--green);}
+.signal .lbl{font:600 17px/1.2 var(--font); letter-spacing:-0.02em;}
+.signal .note{
+  font:400 13px/1.4 var(--font); color:var(--label-2); margin-top:4px;
+}
+
+/* ---------- card / section ---------- */
+.card{
+  background:var(--card); border-radius:var(--r-card);
+  box-shadow:var(--shadow-1); margin-bottom:var(--s3);
+  overflow:hidden;
+  animation:fadeUp .4s var(--out) both;
+}
+@keyframes fadeUp{
+  from{opacity:0; transform:translateY(6px);}
+  to{opacity:1; transform:translateY(0);}
+}
+.card:nth-child(1){animation-delay:.00s;}
+.card:nth-child(2){animation-delay:.04s;}
+.card:nth-child(3){animation-delay:.08s;}
+.card:nth-child(4){animation-delay:.12s;}
+.card:nth-child(5){animation-delay:.16s;}
+.card:nth-child(6){animation-delay:.20s;}
+
+.card-h{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:var(--s3) var(--s4);
+  border-bottom:0.5px solid var(--sep);
+}
+.card-h .num{
+  font:600 10px/1 var(--mono); letter-spacing:.18em;
+  text-transform:uppercase; color:var(--label-3);
+  margin-right:var(--s2);
+}
+.card-h h2{
+  font:600 13px/1 var(--font); letter-spacing:.06em;
+  text-transform:uppercase; color:var(--label-2);
+  display:flex; align-items:center; gap:var(--s2);
+  flex:1;
+}
+.card-h .dot{
+  width:7px; height:7px; border-radius:50%;
+  background:var(--gray); flex-shrink:0;
+}
+.card.gated .dot{background:var(--purple);}
+.card.checks .dot{background:var(--blue);}
+.card.gate .dot{background:var(--orange);}
+.card.signal-card .dot{background:var(--green);}
+.card-h .cnt{
+  font:500 12px/1 var(--mono); color:var(--label-3);
+  letter-spacing:.05em;
+}
+
+/* ---------- kv ---------- */
+.kv{
+  display:flex; justify-content:space-between; align-items:baseline;
+  padding:var(--s3) var(--s4);
+  border-bottom:0.5px solid var(--sep);
+  gap:var(--s3);
+}
+.kv:last-child{border-bottom:0;}
+.kv .k{
+  font:500 11px/1.3 var(--mono); letter-spacing:.1em;
+  text-transform:uppercase; color:var(--label-3);
+  flex-shrink:0;
+}
+.kv .v{
+  font:400 15px/1.35 var(--font); color:var(--label);
+  text-align:right; word-break:break-word;
+}
+
+/* ---------- purpose ---------- */
+.purpose{
+  padding:var(--s4); font:400 15px/1.5 var(--font); color:var(--label);
+}
+.purpose b{font-weight:600;}
+
+/* ---------- artifacts ---------- */
+.chips{
+  display:flex; flex-wrap:wrap; gap:var(--s2);
+  padding:var(--s3) var(--s4) var(--s4);
+}
+.chip{
+  font:500 13px/1 var(--font); letter-spacing:-0.01em;
+  padding:7px 12px; border-radius:var(--r-pill);
+  background:var(--fill-3); color:var(--label);
+  border:0.5px solid var(--sep);
+}
+
+/* ---------- checks ---------- */
+.check{
+  display:grid; grid-template-columns:32px 1fr 36px;
+  gap:var(--s3); align-items:center;
+  padding:var(--s3) var(--s4);
+  border-bottom:0.5px solid var(--sep);
+  cursor:pointer;
+  transition:background .15s var(--ease);
+  min-height:56px;
+  position:relative;
+}
+.check:last-child{border-bottom:0;}
+.check:active{background:var(--card-press);}
+.check .marker{
+  width:28px; height:28px; border-radius:50%;
+  border:2px solid var(--fill-1);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:600;
+  color:transparent; flex-shrink:0;
+  transition:all .22s var(--spring);
+}
+.check[data-s="doing"] .marker{
+  border-color:var(--blue); background:rgba(0,122,255,0.08); color:var(--blue);
+}
+.check[data-s="done"] .marker{
+  border-color:var(--green); background:var(--green); color:white;
+}
+.check[data-s="done"] .label{
+  color:var(--label-2); text-decoration:line-through;
+  text-decoration-color:var(--label-3);
+}
+.check .body{min-width:0;}
+.check .label{
+  font:400 15px/1.35 var(--font); letter-spacing:-0.01em;
+  color:var(--label); word-break:break-word;
+}
+.check .sub{
+  font:400 12px/1.35 var(--font); color:var(--label-2);
+  margin-top:2px; word-break:break-word;
+}
+.check .flag{
+  width:32px; height:32px; border-radius:8px;
+  background:transparent; border:0.5px solid var(--sep);
+  color:var(--label-3);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; cursor:pointer;
+  transition:all .15s var(--ease);
+  padding:0;
+}
+.check .flag:hover{color:var(--orange); border-color:var(--orange);}
+.check.flagged{background:color-mix(in srgb, var(--orange) 6%, transparent);}
+.check.flagged .flag{
+  background:var(--orange); color:white; border-color:var(--orange);
+}
+.check.flagged .label{color:var(--label);}
+
+/* ---------- gate ---------- */
+.gate-box{
+  padding:var(--s4);
+  font:400 14px/1.5 var(--font); color:var(--label-2);
+  transition:all .3s var(--ease);
+}
+.gate-box.active{
+  background:color-mix(in srgb, var(--orange) 8%, transparent);
+  color:var(--label);
+}
+.gate-box .if,.gate-box .then{
+  display:flex; gap:var(--s3); align-items:baseline;
+  margin-bottom:var(--s2);
+}
+.gate-box .if:last-child,.gate-box .then:last-child{margin-bottom:0;}
+.gate-box .tag{
+  font:600 10px/1 var(--mono); letter-spacing:.14em;
+  text-transform:uppercase; flex-shrink:0;
+  min-width:32px;
+}
+.gate-box.active .tag{color:var(--orange);}
+.gate-box .body{flex:1;}
+
+/* ---------- signal detail ---------- */
+.sig-detail{
+  padding:var(--s4); text-align:center;
+}
+.sig-detail .g{
+  font-family:var(--font); font-size:38px; line-height:1;
+  margin-bottom:var(--s2); display:block;
+}
+.sig-detail.open .g{color:var(--blue);}
+.sig-detail.concern .g{color:var(--orange);}
+.sig-detail.pass .g{color:var(--green);}
+.sig-detail .t{font:600 15px/1.3 var(--font); letter-spacing:-0.01em;}
+.sig-detail .n{
+  font:400 12px/1.4 var(--font); color:var(--label-2); margin-top:2px;
+}
+
+/* ---------- record ---------- */
+.record-btn{
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; padding:var(--s3) var(--s4);
+  background:var(--card); border:0; border-radius:var(--r-card);
+  font:600 14px/1 var(--font); color:var(--label);
+  box-shadow:var(--shadow-1); cursor:pointer;
+  margin-top:var(--s3);
+  transition:transform .15s var(--spring);
+  min-height:52px;
+}
+.record-btn:active{transform:scale(.98);}
+.record-btn .lbl{
+  display:flex; align-items:center; gap:var(--s2);
+}
+.record-btn .cnt{
+  font:500 12px/1 var(--mono); color:var(--label-3);
+  letter-spacing:.05em;
+}
+
+/* ---------- bottom bar ---------- */
+.bar{
+  position:fixed; left:0; right:0; bottom:0; z-index:100;
+  background:color-mix(in srgb, var(--bg) 72%, transparent);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  backdrop-filter:saturate(180%) blur(20px);
+  border-top:0.5px solid var(--sep);
+  padding:var(--s2) var(--s4) max(env(safe-area-inset-bottom), var(--s2));
+  display:flex; gap:var(--s2);
+  max-width:680px; margin:0 auto;
+}
+.bar button{
+  flex:1; padding:11px 8px;
+  background:var(--fill-3); border:0;
+  border-radius:var(--r-btn);
+  font:600 14px/1 var(--font); color:var(--blue);
+  cursor:pointer; min-height:44px;
+  transition:transform .15s var(--spring), background .15s var(--ease);
+}
+.bar button:active{transform:scale(.96); background:var(--fill-2);}
+
+/* ---------- ledger sheet ---------- */
+.sheet-bg{
+  position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,0.4);
+  -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
+  opacity:0; pointer-events:none;
+  transition:opacity .3s var(--ease);
+}
+.sheet-bg.open{opacity:1; pointer-events:auto;}
+.sheet{
+  position:fixed; left:0; right:0; bottom:0; z-index:201;
+  background:var(--card);
+  border-radius:20px 20px 0 0;
+  box-shadow:var(--shadow-3);
+  transform:translateY(100%);
+  transition:transform .5s var(--out);
+  max-height:88vh; max-height:88dvh;
+  display:flex; flex-direction:column;
+  max-width:680px; margin:0 auto;
+}
+.sheet.open{transform:translateY(0);}
+.sheet-grip{
+  width:36px; height:5px; background:var(--fill-1);
+  border-radius:3px; margin:var(--s2) auto var(--s1);
+  flex-shrink:0;
+}
+.sheet-h{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:var(--s2) var(--s4) var(--s3);
+  border-bottom:0.5px solid var(--sep);
+  flex-shrink:0;
+}
+.sheet-h h2{
+  font:600 17px/1.2 var(--font); letter-spacing:-0.02em;
+}
+.sheet-h button{
+  background:transparent; border:0;
+  font:400 17px/1 var(--font); color:var(--blue);
+  cursor:pointer; padding:4px 0;
+}
+.sheet-body{
+  flex:1; overflow-y:auto; padding:var(--s4);
+  -webkit-overflow-scrolling:touch;
+}
+.entry{
+  padding:var(--s3) 0;
+  border-bottom:0.5px dashed var(--sep);
+  animation:fadeUp .4s var(--out) both;
+}
+.entry:last-child{border-bottom:0;}
+.entry-h{
+  display:flex; justify-content:space-between; align-items:baseline;
+  gap:var(--s2); margin-bottom:4px;
+}
+.entry-tag{
+  font:600 10px/1 var(--mono); letter-spacing:.14em;
+  text-transform:uppercase; color:var(--blue);
+}
+.entry-tag.check{color:var(--blue);}
+.entry-tag.flag{color:var(--orange);}
+.entry-tag.signal{color:var(--green);}
+.entry-tag.open{color:var(--label-3);}
+.entry-time{
+  font:400 10px/1 var(--mono); color:var(--label-3); letter-spacing:.06em;
+}
+.entry-body{
+  font:400 13px/1.45 var(--font); color:var(--label);
+}
+.entry-src{
+  font:400 11px/1.4 var(--mono); color:var(--label-3);
+  margin-top:4px; letter-spacing:.02em;
+}
+.empty{
+  padding:var(--s6); text-align:center;
+  font:400 14px/1.5 var(--font); color:var(--label-3);
+}
+
+/* ---------- toast ---------- */
+.toast-wrap{
+  position:fixed; top:max(env(safe-area-inset-top), 12px);
+  left:50%; transform:translateX(-50%);
+  z-index:300; pointer-events:none;
+  width:min(360px, calc(100vw - 32px));
+}
+.toast{
+  background:rgba(0,0,0,0.82);
+  color:white;
+  border-radius:14px; padding:12px 16px;
+  font:500 14px/1.35 var(--font);
+  box-shadow:0 12px 32px rgba(0,0,0,0.3);
+  margin-bottom:8px;
+  -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+  display:flex; align-items:center; gap:10px;
+  animation:toastIn .4s var(--spring) both;
+}
+@keyframes toastIn{
+  from{opacity:0; transform:translateY(-12px) scale(.96);}
+  to{opacity:1; transform:translateY(0) scale(1);}
+}
+.toast.out{animation:toastOut .3s var(--ease) both;}
+@keyframes toastOut{
+  to{opacity:0; transform:translateY(-8px);}
+}
+.toast .ic{
+  width:22px; height:22px; border-radius:50%;
+  background:var(--orange); color:white;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700; flex-shrink:0;
+}
+.toast.pass .ic{background:var(--green);}
+.toast.info .ic{background:var(--blue);}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    transition-duration:.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-row">
+    <div class="hdr-t">
+      <h1 id="h1">The Final Walkthrough</h1>
+      <div class="sub" id="sub">Pre-closing verification</div>
+    </div>
+    <button class="ring" id="ring" aria-label="Signal">
+      <svg viewBox="0 0 36 36">
+        <circle class="bg" cx="18" cy="18" r="15.9"></circle>
+        <circle class="fill" cx="18" cy="18" r="15.9"></circle>
+      </svg>
+      <span class="lbl" id="ringLbl">0%</span>
+    </button>
+  </div>
+  <div class="seg" id="seg">
+    <button data-v="fde" class="active">FDE</button>
+    <button data-v="agent">Agent</button>
+    <button data-v="client">Client</button>
+  </div>
+</header>
+
+<main class="main" id="main"></main>
+
+<footer class="bar">
+  <button id="exportBtn">Export</button>
+  <button id="shareBtn">Share</button>
+  <button id="recordBtn">Record</button>
+</footer>
+
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-h">
+    <h2>The Record</h2>
+    <button id="sheetClose">Done</button>
+  </div>
+  <div class="sheet-body" id="ledger"></div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ============================================================
+   THE ENGINE — v1.0
+   ------------------------------------------------------------
+   Manifest · Runtime · Badge API · Record · Signal · Skin
+   ------------------------------------------------------------
+   Nothing in the middle. Prepare, not predict.
+   ============================================================ */
+
+/* ---------- 1. MANIFEST (the ritual) ---------- */
+const MANIFEST = {
+  id: 'walkthrough.final',
+  title: 'The Final Walkthrough',
+  tagline: 'Pre-closing verification',
+  badge: 'packet.read',
+
+  preconditions: [
+    { k:'When',     v:'1–3 days before closing' },
+    { k:'Where',    v:'The property, empty' },
+    { k:'Who',      v:"Buyer + buyer's agent" },
+    { k:'Duration', v:'30–90 minutes' },
+    { k:'Not',      v:'Not a full inspection' }
+  ],
+
+  purpose:
+    'Confirm the property is in the <b>agreed-upon condition</b>. Verify negotiated repairs were completed. Check for damage during move-out. If issues arise, raise them with the seller before signing.',
+
+  artifacts: [
+    'Inspection report',
+    'Repair amendment',
+    'Receipts',
+    'Clipboard',
+    'Pen',
+    'Sticky notes'
+  ],
+
+  checks: [
+    { id:'c1', label:'Lights and outlets',       sub:'Every room, every switch' },
+    { id:'c2', label:'Water, toilets, leaks',    sub:'Kitchen, baths, laundry' },
+    { id:'c3', label:'Appliances work',          sub:'Oven, range, fridge, W/D' },
+    { id:'c4', label:'Doors and windows',        sub:'Locks, seals, screens' },
+    { id:'c5', label:'Heating and cooling',      sub:'Run both. Note failures.' },
+    { id:'c6', label:'Walls, floors, ceilings',  sub:'New damage since inspection' }
+  ],
+
+  gate: {
+    if:  'Any check is flagged as a problem',
+    then:'Raise with seller before signing',
+    resolution:'Resolve, or credit at closing'
+  },
+
+  signals: {
+    open:    { glyph:'○', label:'In progress',      note:'Walkthrough underway.' },
+    concern: { glyph:'⚠', label:'Raise · pause',    note:'A problem was flagged. Do not sign yet.' },
+    pass:    { glyph:'✓', label:'Proceed to sign',  note:'All checks passed. Sign papers.' }
+  },
+
+  /* badge release policy — what each view may see */
+  release: {
+    fde:    { artifacts:true, preconditions:true, checks:true, gate:true, record:true,  notes:true  },
+    agent:  { artifacts:true, preconditions:true, checks:true, gate:true, record:true,  notes:true  },
+    client: { artifacts:true, preconditions:true, checks:true, gate:true, record:false, notes:false }
+  }
+};
+
+/* ---------- 2. RUNTIME (state + signal) ---------- */
+const KEY_STATE  = 'ritual.state.v1';
+const KEY_RECORD = 'ritual.record.v1';
+
+const Runtime = {
+  state: null,
+  record: [],
+  view: 'fde',
+
+  init(){
+    try{
+      const s = localStorage.getItem(KEY_STATE);
+      const r = localStorage.getItem(KEY_RECORD);
+      if(s) this.state = JSON.parse(s);
+      if(r) this.record = JSON.parse(r);
+    }catch(e){}
+    if(!this.state){
+      this.state = { checks: {}, complete: false, opened: Date.now() };
+      MANIFEST.checks.forEach(c => this.state.checks[c.id] = { s:'todo', flagged:false });
+    }
+    /* ensure every manifest check exists in state */
+    MANIFEST.checks.forEach(c => {
+      if(!this.state.checks[c.id]) this.state.checks[c.id] = { s:'todo', flagged:false };
+    });
+  },
+
+  save(){
+    try{
+      localStorage.setItem(KEY_STATE, JSON.stringify(this.state));
+      localStorage.setItem(KEY_RECORD, JSON.stringify(this.record));
+    }catch(e){}
+  },
+
+  /* --- mutations --- */
+  cycle(id){
+    const c = this.state.checks[id]; if(!c) return;
+    const order = ['todo','doing','done'];
+    const prev = c.s;
+    c.s = order[(order.indexOf(c.s)+1) % 3];
+    this.append('check',
+      `Step <b>${this.label(id)}</b> · ${prev} → ${c.s}`,
+      `walkthrough · ${id}`
+    );
+    this.save();
+    return { prev, now:c.s };
+  },
+
+  flag(id){
+    const c = this.state.checks[id]; if(!c) return;
+    c.flagged = !c.flagged;
+    if(c.flagged){
+      this.append('flag', `Concern raised · <b>${this.label(id)}</b>`, `gate armed · ${id}`);
+      this.append('signal', `Signal → <b>CONCERN</b> · do not sign`, `system`);
+    } else {
+      this.append('check', `Concern cleared · <b>${this.label(id)}</b>`, `walkthrough · ${id}`);
+      if(this.allDone() && !this.anyFlagged()){
+        this.append('signal', `Signal → <b>PASS</b> · proceed to sign`, `system`);
+      }
+    }
+    this.save();
+    return c.flagged;
+  },
+
+  reset(){
+    this.state = { checks:{}, complete:false, opened:Date.now() };
+    MANIFEST.checks.forEach(c => this.state.checks[c.id] = { s:'todo', flagged:false });
+    this.record = [];
+    this.append('open', `Ritual reset`, `system`);
+    this.save();
+  },
+
+  /* --- derived --- */
+  label(id){ const c = MANIFEST.checks.find(x => x.id === id); return c ? c.label : id; },
+
+  progress(){
+    const total = MANIFEST.checks.length; if(!total) return 0;
+    const done = MANIFEST.checks.filter(c => this.state.checks[c.id].s === 'done').length;
+    return done / total;
+  },
+
+  anyFlagged(){ return MANIFEST.checks.some(c => this.state.checks[c.id].flagged); },
+  allDone(){ return MANIFEST.checks.every(c => this.state.checks[c.id].s === 'done'); },
+
+  signal(){
+    if(this.anyFlagged()) return 'concern';
+    if(this.allDone()) return 'pass';
+    return 'open';
+  },
+
+  /* --- record --- */
+  append(tag, body, src){
+    const entry = { t: Date.now(), tag, body, src };
+    this.record.push(entry);
+    this.save();
+    if(typeof this.onAppend === 'function') this.onAppend(entry);
+    return entry;
+  }
+};
+
+/* ---------- 3. BADGE API ---------- */
+const Badge = {
+  current: 'fde',
+  set(view){ this.current = view; },
+  /* release(scope) → true if the current badge may see this scope */
+  release(scope){
+    const r = MANIFEST.release[this.current] || {};
+    return !!r[scope];
+  }
+};
+
+/* ---------- 4. SKIN (render) ---------- */
+const Skin = {
+  el: {
+    main: document.getElementById('main'),
+    ring: document.getElementById('ring'),
+    ringLbl: document.getElementById('ringLbl'),
+    h1: document.getElementById('h1'),
+    sub: document.getElementById('sub'),
+    ledger: document.getElementById('ledger'),
+    sheet: document.getElementById('sheet'),
+    sheetBg: document.getElementById('sheetBg'),
+    toasts: document.getElementById('toasts')
+  },
+
+  esc(s){
+    return String(s ?? '').replace(/[&<>"']/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  },
+
+  render(){
+    const R = Runtime;
+    this.el.h1.textContent = MANIFEST.title;
+    this.el.sub.textContent = MANIFEST.tagline;
+
+    const p = R.progress();
+    const sig = R.signal();
+
+    /* ring */
+    this.el.ring.classList.remove('open','concern','pass');
+    this.el.ring.classList.add(sig);
+    const fill = this.el.ring.querySelector('.fill');
+    fill.style.strokeDashoffset = String(100 - p * 100);
+    this.el.ringLbl.textContent = Math.round(p * 100) + '%';
+
+    /* main */
+    this.el.main.innerHTML = '';
+
+    this.el.main.appendChild(this.signalBanner(sig));
+    this.el.main.appendChild(this.preconditions());
+    this.el.main.appendChild(this.purpose());
+    if(Badge.release('artifacts')) this.el.main.appendChild(this.artifacts());
+    this.el.main.appendChild(this.checksCard());
+    this.el.main.appendChild(this.gateCard(sig));
+    this.el.main.appendChild(this.recordButton());
+  },
+
+  signalBanner(sig){
+    const s = MANIFEST.signals[sig];
+    const d = document.createElement('div');
+    d.className = 'signal ' + sig;
+    d.innerHTML = `
+      <span class="glyph">${s.glyph}</span>
+      <div class="lbl">${this.esc(s.label)}</div>
+      <div class="note">${this.esc(s.note)}</div>
+    `;
+    return d;
+  },
+
+  preconditions(){
+    const card = document.createElement('section');
+    card.className = 'card';
+    const head = document.createElement('div');
+    head.className = 'card-h';
+    head.innerHTML = `
+      <h2><span class="dot"></span><span class="num">I</span>Preconditions</h2>
+      <div class="cnt">${MANIFEST.preconditions.length}</div>
+    `;
+    card.appendChild(head);
+    MANIFEST.preconditions.forEach(p => {
+      const kv = document.createElement('div');
+      kv.className = 'kv';
+      kv.innerHTML = `<div class="k">${this.esc(p.k)}</div><div class="v">${this.esc(p.v)}</div>`;
+      card.appendChild(kv);
+    });
+    return card;
+  },
+
+  purpose(){
+    const card = document.createElement('section');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-h">
+        <h2><span class="dot"></span><span class="num">II</span>Purpose</h2>
+      </div>
+      <div class="purpose">${MANIFEST.purpose}</div>
+    `;
+    return card;
+  },
+
+  artifacts(){
+    const card = document.createElement('section');
+    card.className = 'card';
+    const head = document.createElement('div');
+    head.className = 'card-h';
+    head.innerHTML = `
+      <h2><span class="dot"></span><span class="num">III</span>Artifacts</h2>
+      <div class="cnt">${MANIFEST.artifacts.length}</div>
+    `;
+    card.appendChild(head);
+    const chips = document.createElement('div');
+    chips.className = 'chips';
+    MANIFEST.artifacts.forEach(a => {
+      const c = document.createElement('div');
+      c.className = 'chip';
+      c.textContent = a;
+      chips.appendChild(c);
+    });
+    card.appendChild(chips);
+    return card;
+  },
+
+  checksCard(){
+    const card = document.createElement('section');
+    card.className = 'card checks';
+    const done = MANIFEST.checks.filter(c => Runtime.state.checks[c.id].s === 'done').length;
+    const head = document.createElement('div');
+    head.className = 'card-h';
+    head.innerHTML = `
+      <h2><span class="dot"></span><span class="num">IV</span>Checks</h2>
+      <div class="cnt">${done}/${MANIFEST.checks.length}</div>
+    `;
+    card.appendChild(head);
+
+    MANIFEST.checks.forEach(c => {
+      const s = Runtime.state.checks[c.id];
+      const el = document.createElement('div');
+      el.className = 'check' + (s.flagged ? ' flagged' : '');
+      el.dataset.s = s.s;
+      el.dataset.id = c.id;
+      el.innerHTML = `
+        <div class="marker">${s.s === 'done' ? '✓' : s.s === 'doing' ? '●' : ''}</div>
+        <div class="body">
+          <div class="label">${this.esc(c.label)}</div>
+          <div class="sub">${this.esc(c.sub || '')}</div>
+        </div>
+        <button class="flag" aria-label="Flag as problem">⚑</button>
+      `;
+      el.addEventListener('click', (e) => {
+        if(e.target.closest('.flag')) return;
+        const r = Runtime.cycle(c.id);
+        this.toast(`Step ${c.label} · ${r.now}`, 'info');
+        this.render();
+      });
+      el.querySelector('.flag').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const now = Runtime.flag(c.id);
+        this.toast(now ? 'Concern raised · do not sign' : 'Concern cleared', now ? 'concern' : 'pass');
+        this.render();
+      });
+      card.appendChild(el);
+    });
+    return card;
+  },
+
+  gateCard(sig){
+    const card = document.createElement('section');
+    card.className = 'card gate';
+    const active = sig === 'concern';
+    card.innerHTML = `
+      <div class="card-h">
+        <h2><span class="dot"></span><span class="num">V</span>Gate</h2>
+        <div class="cnt">${active ? 'ACTIVE' : 'ARMED'}</div>
+      </div>
+      <div class="gate-box ${active ? 'active' : ''}">
+        <div class="if"><span class="tag">IF</span><span class="body">${this.esc(MANIFEST.gate.if)}</span></div>
+        <div class="then"><span class="tag">→</span><span class="body">${this.esc(MANIFEST.gate.then)}</span></div>
+        <div class="then"><span class="tag">→</span><span class="body">${this.esc(MANIFEST.gate.resolution)}</span></div>
+      </div>
+    `;
+    return card;
+  },
+
+  recordButton(){
+    const wrap = document.createElement('button');
+    wrap.className = 'record-btn';
+    wrap.id = 'openRecord';
+    wrap.innerHTML = `
+      <span class="lbl">◆ The Record</span>
+      <span class="cnt">${Runtime.record.length} ${Runtime.record.length === 1 ? 'entry' : 'entries'}</span>
+    `;
+    wrap.addEventListener('click', () => this.openLedger());
+    return wrap;
+  },
+
+  /* --- ledger sheet --- */
+  renderLedger(){
+    const el = this.el.ledger;
+    if(!Runtime.record.length){
+      el.innerHTML = '<div class="empty">The Record is empty.<br>Begin the walkthrough.</div>';
+      return;
+    }
+    el.innerHTML = '';
+    /* show latest first */
+    const list = [...Runtime.record].reverse();
+    list.forEach(r => {
+      const d = document.createElement('div');
+      d.className = 'entry';
+      const t = new Date(r.t);
+      const time = String(t.getHours()).padStart(2,'0') + ':' +
+                   String(t.getMinutes()).padStart(2,'0') + ':' +
+                   String(t.getSeconds()).padStart(2,'0');
+      d.innerHTML = `
+        <div class="entry-h">
+          <span class="entry-tag ${r.tag}">${this.esc(r.tag)}</span>
+          <span class="entry-time">${time}</span>
+        </div>
+        <div class="entry-body">${r.body}</div>
+        ${r.src ? `<div class="entry-src">${this.esc(r.src)}</div>` : ''}
+      `;
+      el.appendChild(d);
+    });
+  },
+
+  openLedger(){
+    this.renderLedger();
+    this.el.sheetBg.classList.add('open');
+    this.el.sheet.classList.add('open');
+  },
+
+  closeLedger(){
+    this.el.sheetBg.classList.remove('open');
+    this.el.sheet.classList.remove('open');
+  },
+
+  /* --- toast (in-app notification) --- */
+  toast(text, kind='info'){
+    const wrap = this.el.toasts;
+    const t = document.createElement('div');
+    t.className = 'toast ' + kind;
+    const icon = kind === 'concern' ? '!' : kind === 'pass' ? '✓' : 'i';
+    t.innerHTML = `<div class="ic">${icon}</div><div>${this.esc(text)}</div>`;
+    wrap.appendChild(t);
+    setTimeout(() => {
+      t.classList.add('out');
+      setTimeout(() => t.remove(), 300);
+    }, 2200);
+  },
+
+  /* --- export --- */
+  exportMarkdown(){
+    const R = Runtime;
+    const sig = R.signal();
+    const s = MANIFEST.signals[sig];
+    const lines = [];
+    lines.push(`# ${MANIFEST.title}`);
+    lines.push(`_${MANIFEST.tagline} · ${new Date().toISOString()}_`);
+    lines.push('');
+    lines.push(`**Signal:** ${s.glyph} ${s.label} — ${s.note}`);
+    lines.push(`**Progress:** ${Math.round(R.progress()*100)}%`);
+    lines.push('');
+    lines.push('## Preconditions');
+    MANIFEST.preconditions.forEach(p => lines.push(`- **${p.k}:** ${p.v}`));
+    lines.push('');
+    lines.push('## Purpose');
+    lines.push(MANIFEST.purpose.replace(/<[^>]+>/g,''));
+    lines.push('');
+    lines.push('## Checks');
+    MANIFEST.checks.forEach(c => {
+      const st = R.state.checks[c.id];
+      const mark = st.flagged ? '⚑' : st.s === 'done' ? '[x]' : st.s === 'doing' ? '[/]' : '[ ]';
+      lines.push(`- ${mark} ${c.label}${c.sub ? ` — _${c.sub}_` : ''}`);
+    });
+    lines.push('');
+    lines.push('## Gate');
+    lines.push(`- **If:** ${MANIFEST.gate.if}`);
+    lines.push(`- **Then:** ${MANIFEST.gate.then}`);
+    lines.push(`- **Resolution:** ${MANIFEST.gate.resolution}`);
+    lines.push('');
+    lines.push('_Prepare, not predict._');
+    return lines.join('\n');
+  },
+
+  exportJSON(){
+    return JSON.stringify({
+      manifest: { id: MANIFEST.id, title: MANIFEST.title, badge: MANIFEST.badge },
+      state: Runtime.state,
+      record: Runtime.record,
+      view: Badge.current
+    }, null, 2);
+  },
+
+  download(name, text){
+    const b = new Blob([text], {type:'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+};
+
+/* ---------- 5. WIRING ---------- */
+
+/* segmented view toggle (badge) */
+document.getElementById('seg').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#seg button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  Badge.set(b.dataset.v);
+  Skin.render();
+  Skin.toast(`Badge → ${b.dataset.v.toUpperCase()}`, 'info');
+});
+
+/* ring click → speak signal (Web Speech API, if available) */
+document.getElementById('ring').addEventListener('click', () => {
+  const sig = Runtime.signal();
+  const s = MANIFEST.signals[sig];
+  const text = `${s.label}. ${s.note}`;
+  if('speechSynthesis' in window){
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1; u.pitch = 1;
+    speechSynthesis.speak(u);
+  }
+  Skin.toast(text, sig === 'concern' ? 'concern' : sig === 'pass' ? 'pass' : 'info');
+});
+
+/* ledger sheet */
+document.getElementById('sheetClose').addEventListener('click', () => Skin.closeLedger());
+document.getElementById('sheetBg').addEventListener('click', () => Skin.closeLedger());
+
+/* export */
+document.getElementById('exportBtn').addEventListener('click', () => {
+  Skin.download(`packet_${Date.now()}.md`, Skin.exportMarkdown());
+  Skin.toast('Packet exported', 'info');
+});
+
+/* share */
+document.getElementById('shareBtn').addEventListener('click', async () => {
+  const md = Skin.exportMarkdown();
+  if(navigator.share){
+    try{ await navigator.share({ title: MANIFEST.title, text: md }); }
+    catch(e){}
+  } else {
+    try{
+      await navigator.clipboard.writeText(md);
+      Skin.toast('Copied to clipboard', 'info');
+    }catch(e){
+      Skin.download(`packet_${Date.now()}.md`, md);
+    }
+  }
+});
+
+/* record button (footer) */
+document.getElementById('recordBtn').addEventListener('click', () => Skin.openLedger());
+
+/* ---------- 6. SIRI BRIDGE (URL commands) ---------- */
+/* Siri Shortcut: open ritual.html?cmd=status  → speaks signal
+   Siri Shortcut: open ritual.html?cmd=flag&id=c1  → flags check
+   Siri Shortcut: open ritual.html?cmd=done&id=c1  → marks done
+   Siri Shortcut: open ritual.html?cmd=reset  → resets ritual */
+function handleCommand(){
+  const params = new URLSearchParams(location.search);
+  const cmd = params.get('cmd');
+  if(!cmd) return;
+  const id = params.get('id');
+
+  if(cmd === 'status'){
+    const sig = Runtime.signal();
+    const s = MANIFEST.signals[sig];
+    const pct = Math.round(Runtime.progress() * 100);
+    const text = `${s.label}. ${pct} percent complete. ${s.note}`;
+    if('speechSynthesis' in window){
+      const u = new SpeechSynthesisUtterance(text);
+      speechSynthesis.speak(u);
+    }
+    Skin.toast(text, sig === 'concern' ? 'concern' : sig === 'pass' ? 'pass' : 'info');
+  }
+  else if(cmd === 'flag' && id){ Runtime.flag(id); Skin.render(); }
+  else if(cmd === 'done' && id){ Runtime.cycle(id); Runtime.cycle(id); Skin.render(); }
+  else if(cmd === 'reset'){ Runtime.reset(); Skin.render(); }
+
+  /* clean the URL so it doesn't re-fire on reload */
+  history.replaceState({}, '', location.pathname);
+}
+
+/* ---------- 7. BOOT ---------- */
+Runtime.init();
+Badge.set('fde');
+Runtime.onAppend = () => { /* hook for external notifications */ };
+Skin.render();
+handleCommand();
+
+/* first-run notice */
+if(Runtime.record.length === 0){
+  Runtime.append('open', `<b>Ritual opened</b> · ${MANIFEST.title}`, 'system');
+  Skin.render();
+}
+</script>
+</body>
+</html>
