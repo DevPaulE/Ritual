@@ -8,6 +8,27 @@
 <meta name="theme-color" content="#000000">
 <title>Ritual · Scan</title>
 <style>
+  .record-btn{
+  background:linear-gradient(160deg, rgba(255,69,58,0.4), rgba(255,69,58,0.15));
+  border-color:rgba(255,69,58,0.6);
+  font-size:26px;
+}
+.record-btn.recording{
+  background:linear-gradient(160deg, rgba(255,69,58,0.9), rgba(255,69,58,0.5));
+  box-shadow:0 0 40px rgba(255,69,58,0.7);
+  animation:pulseRec 1.2s ease-in-out infinite;
+}
+@keyframes pulseRec{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.05);}
+}
+.record-btn .timer{
+  position:absolute;
+  bottom:-24px; left:50%; transform:translateX(-50%);
+  font:600 11px/1 var(--mono); color:var(--red);
+  letter-spacing:.08em;
+  white-space:nowrap;
+}
 :root{
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
           "Helvetica Neue", Helvetica, Arial, sans-serif;
