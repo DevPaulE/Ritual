@@ -624,6 +624,20 @@ function render(){
   sigBadge.textContent = Math.round(p*100) + '%';
   frame.classList.remove('listening','concern','pass','open');
   frame.classList.add(sig, 'listening');
+
+  /* header — shows property + room + phase when context exists */
+  const titleEl = document.getElementById('title');
+  const subEl   = document.getElementById('sub');
+  if(CTX && CTX.property){
+    titleEl.textContent = CTX.property;
+    const roomLabel  = CTX.room  || 'room';
+    const phaseLabel = CTX.phase || 'walkthrough';
+    const focusLabel = CTX.focus || 'all';
+    subEl.textContent = `${roomLabel} · ${phaseLabel} · ${focusLabel}`;
+  } else {
+    titleEl.textContent = 'The Final Walkthrough';
+    subEl.textContent   = 'Say "flag water" · "done lights" · "status"';
+  }
 }
 
 /* ---------- status pill ---------- */
