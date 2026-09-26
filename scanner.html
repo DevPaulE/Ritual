@@ -506,6 +506,17 @@ const SYNONYMS = {
 };
 
 const STORAGE = 'scanner.state.v1';
+  /* read pre-flight context */
+let CTX = {};
+try{
+  const c = localStorage.getItem('scan.context.v1');
+  if(c) CTX = JSON.parse(c);
+}catch(e){}
+
+/* if no context, redirect to preflight */
+if(!CTX.property){
+  window.location.href = './preflight.html';
+}
 
 /* ---------- runtime ---------- */
 const Runtime = {
