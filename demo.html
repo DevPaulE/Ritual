@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ritual">
+<meta name="theme-color" content="#000000">
+<title>Ritual</title>
+<style>
+:root{
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --gold: #D4AF37;
+  --gold-2: #E8C766;
+  --cream: #F5F2E8;
+  --cream-2: rgba(245,242,232,0.62);
+  --cream-3: rgba(245,242,232,0.32);
+  --open: #6BA3C7;
+  --concern: #E87A3B;
+  --pass: #7FB069;
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%; overflow:hidden;}
+body{
+  font: 16px/1.5 var(--font);
+  background:#000; color:var(--cream);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh; min-height:100dvh;
+  position:relative;
+}
+
+/* ---------- screen 1: the invitation ---------- */
+.start{
+  position:fixed; inset:0; z-index:100;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:40px 32px;
+  text-align:center;
+  background: radial-gradient(ellipse at center, #0a0a0c 0%, #000 100%);
+  transition:opacity .8s ease, transform .8s ease;
+}
+.start.hide{
+  opacity:0; transform:scale(1.05);
+  pointer-events:none;
+}
+.start .mark{
+  font:300 12px/1 var(--mono);
+  letter-spacing:0.42em;
+  text-transform:uppercase;
+  color:var(--gold);
+  opacity:0.75;
+  margin-bottom:32px;
+}
+.start h1{
+  font:200 44px/1.1 var(--font);
+  letter-spacing:-0.04em;
+  color:var(--cream);
+  margin-bottom:20px;
+}
+.start h1 em{
+  font-style:italic;
+  font-weight:300;
+  color:var(--gold-2);
+}
+.start p{
+  font:300 17px/1.55 var(--font);
+  color:var(--cream-2);
+  max-width:340px;
+  margin:0 auto 48px;
+}
+.start .begin{
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color:#0a0806;
+  border:0;
+  border-radius:999px;
+  padding:18px 44px;
+  font:600 17px/1 var(--font);
+  letter-spacing:0.02em;
+  cursor:pointer;
+  transition:transform .25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow .3s ease;
+  box-shadow: 0 0 0 0 rgba(212,175,55,0.6);
+  animation: pulseGlow 2.5s ease-in-out infinite;
+  min-height:56px;
+}
+@keyframes pulseGlow{
+  0%,100%{ box-shadow:0 0 0 0 rgba(212,175,55,0.5), 0 12px 40px -12px rgba(212,175,55,0.6); }
+  50%    { box-shadow:0 0 0 14px rgba(212,175,55,0), 0 12px 40px -12px rgba(212,175,55,0.9); }
+}
+.start .begin:active{
+  transform:scale(0.96);
+}
+.start .hint{
+  margin-top:28px;
+  font:400 12px/1.4 var(--mono);
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:var(--cream-3);
+}
+
+/* ---------- screen 2: the live ---------- */
+.live{
+  position:fixed; inset:0;
+  opacity:0; pointer-events:none;
+  transition:opacity .8s ease .3s;
+}
+.live.show{ opacity:1; pointer-events:auto; }
+
+video{
+  position:fixed; inset:0;
+  width:100%; height:100%;
+  object-fit:cover;
+  transform: scaleX(-1);
+  z-index:1;
+  opacity:0;
+  transition:opacity 1s ease;
+}
+video.on{ opacity:0.55; }
+
+/* vignette */
+.live::after{
+  content:'';
+  position:fixed; inset:0; z-index:2;
+  background:
+    radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.7) 90%),
+    linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 20%, transparent 75%, rgba(0,0,0,0.85) 100%);
+  pointer-events:none;
+}
+
+/* signal ring, centered */
+.ring-wrap{
+  position:fixed; top:50%; left:50%;
+  transform:translate(-50%, -50%);
+  width:220px; height:220px;
+  z-index:5;
+  pointer-events:none;
+}
+.ring-wrap svg{
+  width:100%; height:100%;
+  transform:rotate(-90deg);
+}
+.ring-wrap .bg{
+  fill:none; stroke:rgba(245,242,232,0.12); stroke-width:1.5;
+}
+.ring-wrap .fill{
+  fill:none; stroke-width:3; stroke-linecap:round;
+  stroke-dasharray:100; stroke-dashoffset:100;
+  transition:stroke-dashoffset 1.2s cubic-bezier(0.16,1,0.3,1),
+             stroke .6s ease;
+}
+.ring-wrap .inner{
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center;
+}
+.ring-wrap .glyph{
+  font:300 52px/1 var(--font);
+  color:var(--open);
+  transition:color .5s ease;
+  margin-bottom:8px;
+}
+.ring-wrap .state{
+  font:500 11px/1 var(--mono);
+  letter-spacing:0.32em;
+  text-transform:uppercase;
+  color:var(--cream-2);
+  transition:color .5s ease;
+}
+.ring-wrap.open .glyph{ color:var(--open); }
+.ring-wrap.open .fill{ stroke:var(--open); }
+.ring-wrap.concern .glyph{ color:var(--concern); }
+.ring-wrap.concern .fill{ stroke:var(--concern); }
+.ring-wrap.concern .state{ color:var(--concern); }
+.ring-wrap.pass .glyph{ color:var(--pass); }
+.ring-wrap.pass .fill{ stroke:var(--pass); }
+.ring-wrap.pass .state{ color:var(--pass); }
+
+/* current check being named */
+.next{
+  position:fixed; top:calc(50% + 140px); left:50%;
+  transform:translateX(-50%);
+  z-index:5;
+  font:300 14px/1.4 var(--font);
+  color:var(--cream-2);
+  text-align:center;
+  max-width:80vw;
+  transition:opacity .3s ease;
+  font-style:italic;
+}
+
+/* status strip */
+.status-bar{
+  position:fixed; bottom:0; left:0; right:0; z-index:5;
+  padding: 24px 24px max(env(safe-area-inset-bottom), 32px);
+  text-align:center;
+  pointer-events:none;
+}
+.status-bar .lbl{
+  font:500 10px/1 var(--mono);
+  letter-spacing:0.4em;
+  text-transform:uppercase;
+  color:var(--gold);
+  opacity:0.75;
+  margin-bottom:14px;
+}
+.status-bar .heard{
+  font:300 22px/1.35 var(--font);
+  color:var(--cream);
+  font-style:italic;
+  min-height:30px;
+  transition:opacity .3s ease;
+}
+.status-bar .heard.dim{ opacity:0.35; }
+
+/* listening pulse */
+.pulse{
+  position:fixed; bottom:max(env(safe-area-inset-bottom), 120px);
+  left:50%; transform:translateX(-50%);
+  z-index:6;
+  width:60px; height:60px;
+  display:flex; align-items:center; justify-content:center;
+}
+.pulse .dot{
+  width:12px; height:12px; border-radius:50%;
+  background:var(--gold);
+  box-shadow:0 0 20px var(--gold);
+  animation:breathe 1.6s ease-in-out infinite;
+}
+@keyframes breathe{
+  0%,100%{ transform:scale(1); opacity:0.6; }
+  50%    { transform:scale(1.4); opacity:1; }
+}
+
+/* toast */
+.toast{
+  position:fixed; top:max(env(safe-area-inset-top), 20px);
+  left:50%; transform:translateX(-50%);
+  z-index:8;
+  background:rgba(0,0,0,0.7);
+  -webkit-backdrop-filter:blur(30px);
+  backdrop-filter:blur(30px);
+  border:1px solid rgba(212,175,55,0.3);
+  border-radius:999px;
+  padding:10px 18px;
+  font:500 12px/1 var(--font);
+  letter-spacing:0.06em;
+  color:var(--cream);
+  opacity:0;
+  transition:opacity .4s ease, transform .4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events:none;
+}
+.toast.on{
+  opacity:1; transform:translateX(-50%) translateY(0);
+}
+.toast{ transform:translateX(-50%) translateY(-20px); }
+
+/* error */
+.err{
+  position:fixed; top:50%; left:50%;
+  transform:translate(-50%, -50%);
+  z-index:20;
+  text-align:center;
+  padding:32px;
+  max-width:320px;
+  background:rgba(0,0,0,0.85);
+  -webkit-backdrop-filter:blur(30px);
+  backdrop-filter:blur(30px);
+  border-radius:20px;
+  border:1px solid rgba(212,175,55,0.2);
+  display:none;
+}
+.err.on{ display:block; }
+.err h3{
+  font:500 17px/1.3 var(--font);
+  color:var(--cream);
+  margin-bottom:12px;
+}
+.err p{
+  font:300 14px/1.5 var(--font);
+  color:var(--cream-2);
+}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:0.01ms !important;
+    transition-duration:0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== SCREEN 1: THE INVITATION ===== -->
+<div class="start" id="start">
+  <div class="mark">● Ritual</div>
+  <h1>A voice<br>for the<br><em>room</em> you're in.</h1>
+  <p>Point your phone at a room. Speak. Watch what happens.</p>
+  <button class="begin" id="beginBtn">Begin</button>
+  <div class="hint">Camera + mic stay on your device</div>
+</div>
+
+<!-- ===== SCREEN 2: THE LIVE ===== -->
+<div class="live" id="live">
+
+  <video id="cam" playsinline muted autoplay></video>
+
+  <div class="ring-wrap open" id="ringWrap">
+    <svg viewBox="0 0 36 36">
+      <circle class="bg" cx="18" cy="18" r="17"></circle>
+      <circle class="fill" cx="18" cy="18" r="17"></circle>
+    </svg>
+    <div class="inner">
+      <div class="glyph" id="glyph">○</div>
+      <div class="state" id="stateLbl">Listening</div>
+    </div>
+  </div>
+
+  <div class="next" id="nextLbl">Say “flag the roof” or “mark the lights done”</div>
+
+  <div class="pulse" id="pulse">
+    <div class="dot"></div>
+  </div>
+
+  <div class="status-bar">
+    <div class="lbl">You said</div>
+    <div class="heard dim" id="heard">…</div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="err" id="err">
+    <h3>Permission needed</h3>
+    <p>Camera and mic need to be allowed. Open Settings → Safari → Camera & Microphone → Allow, then reload this page.</p>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   RITUAL — THE DEMO
+   Camera + mic + speech. One tap. It speaks. You speak.
+   The engine fires. The signal changes. That is the whole thing.
+   ============================================================ */
+
+/* ---------- the ritual state (in-memory, throwaway) ---------- */
+const CHECKS = [
+  { id:'roof',     label:'the roof',              status:'todo', flagged:false },
+  { id:'water',    label:'the water',             status:'todo', flagged:false },
+  { id:'lights',   label:'the lights',            status:'todo', flagged:false },
+  { id:'windows',  label:'the doors and windows', status:'todo', flagged:false },
+  { id:'heat',     label:'the heat',              status:'todo', flagged:false },
+  { id:'walls',    label:'the walls',             status:'todo', flagged:false }
+];
+
+const state = {
+  checks: CHECKS,
+  history: [],
+  started: false
+};
+
+/* ---------- DOM ---------- */
+const el = {
+  start:    document.getElementById('start'),
+  beginBtn: document.getElementById('beginBtn'),
+  live:     document.getElementById('live'),
+  cam:      document.getElementById('cam'),
+  ringWrap: document.getElementById('ringWrap'),
+  glyph:    document.getElementById('glyph'),
+  stateLbl: document.getElementById('stateLbl'),
+  nextLbl:  document.getElementById('nextLbl'),
+  heard:    document.getElementById('heard'),
+  toast:    document.getElementById('toast'),
+  err:      document.getElementById('err')
+};
+
+/* ---------- voice: speak ---------- */
+function say(text, opts = {}){
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = opts.rate ?? 0.98;
+  u.pitch = opts.pitch ?? 1;
+  u.volume = opts.volume ?? 1;
+  speechSynthesis.speak(u);
+}
+
+/* ---------- voice: listen ---------- */
+let recog = null;
+let listening = false;
+
+function startListening(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    el.nextLbl.textContent = 'Voice not supported in this browser.';
+    return;
+  }
+  recog = new SR();
+  recog.continuous = true;
+  recog.interimResults = true;
+  recog.lang = 'en-US';
+
+  recog.onstart = () => { listening = true; };
+  recog.onend   = () => {
+    listening = false;
+    /* restart — iOS Safari ends after pauses */
+    if(state.started) setTimeout(() => { try { recog.start(); } catch(e){} }, 300);
+  };
+  recog.onerror = (e) => {
+    if(e.error === 'not-allowed' || e.error === 'service-not-allowed'){
+      el.err.classList.add('on');
+    }
+  };
+  recog.onresult = (e) => {
+    const last = e.results[e.results.length - 1];
+    if(!last.isFinal) return;
+    const text = last[0].transcript.trim().toLowerCase();
+    handleSpeech(text);
+  };
+
+  try { recog.start(); } catch(e){}
+}
+
+/* ---------- command parser ---------- */
+function findCheck(text){
+  if(/roof|shingle|leak.*top/.test(text))                 return 'roof';
+  if(/water|plumb|toilet|pipe|faucet|drain|sink|bath/.test(text)) return 'water';
+  if(/light|outlet|switch|lamp/.test(text))               return 'lights';
+  if(/door|window|lock|seal|screen/.test(text))           return 'windows';
+  if(/heat|hvac|air|furnace|ac\b|cool|warm/.test(text))   return 'heat';
+  if(/wall|floor|ceiling|crack|damage|stain/.test(text))  return 'walls';
+  return null;
+}
+
+function handleSpeech(text){
+  el.heard.textContent = '“' + text + '”';
+  el.heard.classList.remove('dim');
+
+  /* status */
+  if(/\bstatus\b|how.*going|what.*left/.test(text)){
+    const sig = signal();
+    const done = state.checks.filter(c => c.status === 'done').length;
+    say(`${sig.dialog} ${done} of ${state.checks.length} done.`);
+    showToast(sig.label);
+    return;
+  }
+
+  /* next */
+  if(/\bnext\b|what.*do|help/.test(text)){
+    const nxt = state.checks.find(c => c.status !== 'done');
+    if(nxt){
+      say(`Next: ${nxt.label}.`);
+      el.nextLbl.textContent = 'Next: ' + nxt.label;
+    } else {
+      say('Everything is done. The ritual is complete.');
+    }
+    return;
+  }
+
+  /* reset */
+  if(/\breset\b|start over|begin again/.test(text)){
+    state.checks.forEach(c => { c.status = 'todo'; c.flagged = false; });
+    render();
+    say('Reset. The ritual is open.');
+    return;
+  }
+
+  /* flag */
+  if(/\bflag\b|problem|issue|worry|concern|wrong|bad/.test(text)){
+    const id = findCheck(text);
+    if(!id){ say('Which one? Say: flag the roof, or flag the water.'); return; }
+    const c = state.checks.find(x => x.id === id);
+    if(c.flagged){ say(`${c.label} is already flagged.`); return; }
+    c.flagged = true;
+    state.history.push({ t: Date.now(), tag: 'flag', body: c.label });
+    render();
+    showToast('Flagged');
+    say(`Flagged ${c.label}. Gate is active. Do not sign yet.`);
+    return;
+  }
+
+  /* done */
+  if(/\bdone\b|finished|complete|okay|checked|passed|clear/.test(text)){
+    const id = findCheck(text);
+    if(!id){ say('Which one? Say: mark the lights done, or the water is done.'); return; }
+    const c = state.checks.find(x => x.id === id);
+    c.status = 'done';
+    c.flagged = false;
+    state.history.push({ t: Date.now(), tag: 'done', body: c.label });
+    render();
+    showToast('Marked done');
+    const allDone = state.checks.every(x => x.status === 'done');
+    const anyFlag  = state.checks.some(x => x.flagged);
+    if(allDone && !anyFlag){
+      say(`Everything checked. Signal is pass. Proceed to signing.`);
+    } else {
+      say(`${c.label} — done.`);
+    }
+    return;
+  }
+
+  /* didn't understand */
+  say('Try: flag the roof, or the water is done, or say status.');
+}
+
+/* ---------- signal ---------- */
+function signal(){
+  if(state.checks.some(c => c.flagged))    return { key:'concern', label:'CONCERN', dialog:'Concern raised. Do not sign yet.' };
+  if(state.checks.every(c => c.status === 'done')) return { key:'pass',    label:'PASS',    dialog:'All checks passed.' };
+  return { key:'open', label:'OPEN', dialog:'Walkthrough underway.' };
+}
+
+/* ---------- render ---------- */
+function render(){
+  const done = state.checks.filter(c => c.status === 'done').length;
+  const total = state.checks.length;
+  const pct = done / total;
+  const sig = signal();
+
+  const ring = el.ringWrap;
+  ring.classList.remove('open','concern','pass');
+  ring.classList.add(sig.key);
+
+  const fill = ring.querySelector('.fill');
+  fill.style.strokeDashoffset = String(100 - pct * 100);
+
+  const glyphs = { open:'○', concern:'⚠', pass:'✓' };
+  el.glyph.textContent = glyphs[sig.key];
+  el.stateLbl.textContent = sig.label;
+
+  /* next-in-line prompt */
+  const nxt = state.checks.find(c => c.status !== 'done');
+  if(!nxt){
+    el.nextLbl.textContent = 'The ritual is complete.';
+  } else if(sig.key === 'concern'){
+    el.nextLbl.textContent = 'A concern is raised. The gate is active.';
+  } else {
+    el.nextLbl.textContent = 'Say: flag ' + nxt.label.replace('the ','') + ', or ' + nxt.label.replace('the ','') + ' is done';
+  }
+}
+
+/* ---------- toast ---------- */
+let toastTimer = null;
+function showToast(text){
+  el.toast.textContent = text;
+  el.toast.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.toast.classList.remove('on'), 1800);
+}
+
+/* ---------- camera ---------- */
+async function startCamera(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } },
+      audio: false
+    });
+    el.cam.srcObject = stream;
+    el.cam.play().catch(()=>{});
+    el.cam.classList.add('on');
+  }catch(e){
+    el.err.classList.add('on');
+  }
+}
+
+/* ---------- boot ---------- */
+el.beginBtn.addEventListener('click', async () => {
+  /* unlock audio with a user gesture */
+  const u = new SpeechSynthesisUtterance(' ');
+  speechSynthesis.speak(u);
+
+  /* hide start screen */
+  el.start.classList.add('hide');
+  el.live.classList.add('show');
+
+  /* unlock media */
+  await startCamera();
+
+  /* dialogue */
+  setTimeout(() => say('Point your phone at the room. I will listen.'), 400);
+  setTimeout(() => say('Say: flag the roof. Or: the water is done. Or: status.'), 3600);
+  setTimeout(() => {
+    state.started = true;
+    startListening();
+    el.nextLbl.textContent = 'Listening…';
+  }, 7500);
+
+  render();
+});
+
+/* first render */
+render();
+</script>
+</body>
+</html>
